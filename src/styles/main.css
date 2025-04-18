@@ -1,0 +1,107 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+h1,
+h2,
+h3 {
+  font-weight: bold;
+}
+
+button {
+  background-color: var(--button-color);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: var(--button-hover-color);
+}
+
+/* Dark theme */
+:root {
+  --background-color: #121212;
+  --text-color: #ffffff;
+  --button-color: #6200ea;
+  --button-hover-color: #3700b3;
+}
+
+/* Ligth theme */
+.light-theme {
+  --background-color: #ffffff;
+  --text-color: #000000;
+  --button-color: #6200ea;
+  --button-hover-color: #3700b3;
+}
+
+/* App */
+.hero {
+  text-align: center;
+  padding: 50px 20px;
+}
+
+.hero h1 {
+  font-size: 2.5em;
+}
+
+.hero p {
+  font-size: 1.2em;
+}
+
+.hero button {
+  font-size: 1em;
+}
+
+/* Smart Form */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+}
+
+label {
+  font-weight: bold;
+}
+
+input,
+textarea,
+select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+/* Chat AI */
+.chat-ai {
+  padding: 20px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+/* Editor Area */
+.editor-area {
+  padding: 20px;
+}
+
+.editor-area textarea {
+  width: 100%;
+  height: 300px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+/* Export Panel */
+.export-panel {
+  display: flex;
+  gap: 10px;
+  padding: 20px;
+}

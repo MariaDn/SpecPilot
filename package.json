@@ -1,0 +1,29 @@
+{
+  "name": "specpilot",
+  "version": "1.0.0",
+  "description": "SpecPilot is an AI-powered assistant that transforms short project briefs into detailed technical specifications. Designed for developers, product managers, and startup founders, SpecPilot streamlines the early-stage planning process by asking smart follow-up questions and delivering ready-to-use, editable, and exportable tech specs.",
+  "scripts": {
+    "dev": "parcel public/index.html",
+    "build": "parcel build public/index.html",
+    "preview": "parcel preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MariaDn/SpecPilot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MariaDn/SpecPilot/issues"
+  },
+  "homepage": "https://github.com/MariaDn/SpecPilot#readme",
+  "dependencies": {
+    "lit": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "parcel": "^2.14.4",
+    "typescript": "^5.8.3"
+  }
+}

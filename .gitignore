@@ -1,0 +1,15 @@
+# node
+node_modules/
+dist/
+.cache/
+*.log
+
+# parcel
+.parcel-cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# others
+.env
