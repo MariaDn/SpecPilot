@@ -19,6 +19,19 @@
   },
   "homepage": "https://github.com/MariaDn/SpecPilot#readme",
   "dependencies": {
+    "@lit/context": "^1.1.5",
+    "@vaadin/accordion": "^24.7.2",
+    "@vaadin/app-layout": "^24.7.2",
+    "@vaadin/button": "^24.7.2",
+    "@vaadin/checkbox": "^24.7.2",
+    "@vaadin/menu-bar": "^24.7.2",
+    "@vaadin/rich-text-editor": "^24.7.2",
+    "@vaadin/router": "^1.7.5",
+    "@vaadin/scroller": "^24.7.2",
+    "@vaadin/side-nav": "^24.7.2",
+    "@vaadin/tabs": "^24.7.2",
+    "@vaadin/text-area": "^24.7.3",
+    "@vaadin/vertical-layout": "^24.7.2",
     "lit": "^3.3.0"
   },
   "devDependencies": {

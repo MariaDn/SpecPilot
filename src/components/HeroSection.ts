@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { t } from '../i18n/locales';
+import '@vaadin/button';
 
 class HeroSection extends LitElement {
   render() {
@@ -7,14 +8,14 @@ class HeroSection extends LitElement {
       <section class="hero">
         <h1>Welcome to SpecPilot</h1>
         <p>Quickly generate high-quality specifications for your projects.</p>
-        <button @click="${this.startGeneration}">Let’s generate your spec</button>
+        <vaadin-button theme="primary" @click="${this.startGeneration}">
+          Let’s generate your spec
+        </vaadin-button>
       </section>
     `;
   }
 
-  startGeneration() {
-  }
+  startGeneration() {}
 }
 
 customElements.define('hero-section', HeroSection);
-

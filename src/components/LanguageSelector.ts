@@ -1,20 +1,27 @@
 import { LitElement, html, css } from 'lit';
-import { setLanguage, Language } from '../i18n/locales';
+import { setLanguage, Language, currentLanguage } from '../i18n/locales';
+import { customElement } from 'lit/decorators';
+// import '@vaadin/select';
 
+@customElement('language-selector')
 class LanguageSelector extends LitElement {
   static styles = css`
     select {
-        padding: 5px;
-        margin: 10px;
+      padding: 5px;
+      margin: 10px;
     }
   `;
 
   render() {
     return html`
-        <select @change="${this.changeLanguage}">
-            <option value="en">English</option>
-            <option value="ua">Українська</option>
-        </select>
+      <select @change="${this.changeLanguage}">
+        <option value="en" ?selected=${currentLanguage === 'en'}>
+          English
+        </option>
+        <option value="ua" ?selected=${currentLanguage === 'ua'}>
+          Українська
+        </option>
+      </select>
     `;
   }
 
@@ -24,5 +31,3 @@ class LanguageSelector extends LitElement {
     this.requestUpdate();
   }
 }
-
-customElements.define('language-selector', LanguageSelector);
