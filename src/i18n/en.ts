@@ -18,4 +18,8 @@ export const en = {
     saveAsPDF: 'Save as PDF',
     copyLink: 'Copy Link',
   },
+  hero: {
+    title: 'Welcome to SpecPilot',
+    description: 'Quickly generate high-quality specifications for your projects.',
+  },
 };

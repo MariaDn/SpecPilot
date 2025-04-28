@@ -30,17 +30,6 @@ class App extends LitElement {
     }
   `;
 
-  // @state() generatedSpec = '';
-
-  // handleSpecGenerated(event: CustomEvent<string>) {
-  //   console.log('Generated spec:', event.detail);
-  //   this.generatedSpec = event.detail;
-  // }
-
-  // <smart-form @spec-generated=${this.handleSpecGenerated}></smart-form>
-  // <chat-ai></chat-ai>
-  // <editor-area .generatedSpec=${this.generatedSpec}></editor-area>
-
   render() {
     return html`
       <language-selector></language-selector>

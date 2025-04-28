@@ -18,4 +18,8 @@ export const ua = {
     saveAsPDF: 'Зберегти як PDF',
     copyLink: 'Скопіювати посилання',
   },
+  hero: {
+    title: 'Раді бачити вас у SpecPilot',
+    description: 'Швидко створюйте якісні технічні завдання для своїх проєктів.',
+  },
 };

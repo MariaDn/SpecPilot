@@ -6,19 +6,15 @@ import '@vaadin/button';
 import '@vaadin/text-field';
 import { TextArea } from '@vaadin/text-area';
 import { callPublicGemini } from '../gemini';
+import { ExportPanelCss } from './ExportPanelCss';
 
 class SmartForm extends LitElement {
-  // @consume({ context: localeContext })
-  // locale: Translations = t;
-
-  static override styles = css`
+  static override styles = [
+    ExportPanelCss.styles,
+    css`
     :host {
       display: flex;
       flex-direction: column;
-    }
-
-    vaadin-text-field {
-      width: 400px;
     }
 
     label {
@@ -33,7 +29,7 @@ class SmartForm extends LitElement {
       overflow-y: auto;
       max-height: 300px;
     }
-  `;
+  `];
 
   @state() geminiResponse: string = '';
   @state() isGenerating = false;
@@ -56,17 +52,14 @@ class SmartForm extends LitElement {
         >${t.form.description}
         <vaadin-text-field id="description" required></vaadin-text-field>
       </label>
-      <vaadin-button type="submit" @click="${this.generateSpec}">
+      <vaadin-button theme="primary" @click="${this.generateSpec}">
         ${buttonTitle}
       </vaadin-button>
       <h2>${t.preview.heading}</h2>
       <p>${t.preview.editHint}</p>
       <vaadin-text-area .value="${this.geminiResponse}"></vaadin-text-area>
-      <vaadin-button> ${t.export.saveAsPDF} </vaadin-button>
     `;
   }
-
-  // <pre ?hidden=${!this.geminiResponse}>${this.geminiResponse}</pre>
 
   async generateSpec() {
     const name = this.nameField.value || 'SpecPilot';
