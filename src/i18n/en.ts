@@ -9,6 +9,7 @@ export const en = {
   preview: {
     heading: 'Generated Technical Specification',
     editHint: 'You can edit this specification manually below',
+    askAIHint: 'Ask AI assistant',
   },
   feedback: {
     askFeedback: 'Was this helpful?',
@@ -16,6 +17,7 @@ export const en = {
   },
   export: {
     saveAsPDF: 'Save as PDF',
+    saveAsMarkdown: 'Export as Markdown',
     copyLink: 'Copy Link',
   },
   hero: {

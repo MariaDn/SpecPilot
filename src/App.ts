@@ -1,11 +1,9 @@
-import { LitElement, html, css } from 'lit';
-import { state } from 'lit/decorators';
-import './components/HeroSection';
-import './components/SmartForm';
-import './components/ChatAI';
-import './components/EditorArea';
-import './components/ExportPanel';
-import './components/LanguageSelector';
+import { LitElement, html, css } from "lit";
+import { state } from "lit/decorators";
+import "./components/HeroSection";
+import "./components/SmartForm";
+import "./components/EditorArea";
+import "./components/LanguageSelector";
 
 class App extends LitElement {
   static styles = css`
@@ -21,7 +19,13 @@ class App extends LitElement {
       box-sizing: border-box;
       border-radius: 10px;
       position: relative;
+      min-height: 95vh;
     }
+
+    @media screen and (min-width: 960px) {
+      :host {
+        max-width: 1200px;
+      }
 
     language-selector {
       position: absolute;
@@ -35,8 +39,6 @@ class App extends LitElement {
       <language-selector></language-selector>
       <hero-section></hero-section>
       <smart-form></smart-form>
-      <chat-ai></chat-ai>
-      <export-panel></export-panel>
     `;
   }
 }

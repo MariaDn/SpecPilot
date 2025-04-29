@@ -6,15 +6,31 @@ import '@vaadin/button';
 import '@vaadin/text-field';
 import { TextArea } from '@vaadin/text-area';
 import { callPublicGemini } from '../gemini';
-import { ExportPanelCss } from './ExportPanelCss';
+import { ExportCss } from './ExportCss';
+import './ExportPanel';
 
 class SmartForm extends LitElement {
   static override styles = [
-    ExportPanelCss.styles,
+    ExportCss.styles,
     css`
     :host {
       display: flex;
       flex-direction: column;
+    }
+
+    .form-block {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-width: 200px;
+    }
+
+    .left-form {
+      gap: 18px;
+    }
+
+    .form-block h2 {
+      text-align: center;
     }
 
     label {
@@ -29,6 +45,12 @@ class SmartForm extends LitElement {
       overflow-y: auto;
       max-height: 300px;
     }
+
+    .flex {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
   `];
 
   @state() geminiResponse: string = '';
@@ -42,22 +64,30 @@ class SmartForm extends LitElement {
       ? t.form.generating
       : t.form.generateButton;
     return html`
-      <h2>${t.form.title}</h2>
-      <label for="projectName">
-        ${t.form.projectName}
-
-        <vaadin-text-field id="name" required></vaadin-text-field>
-      </label>
-      <label for="description"
-        >${t.form.description}
-        <vaadin-text-field id="description" required></vaadin-text-field>
-      </label>
-      <vaadin-button theme="primary" @click="${this.generateSpec}">
-        ${buttonTitle}
-      </vaadin-button>
-      <h2>${t.preview.heading}</h2>
-      <p>${t.preview.editHint}</p>
-      <vaadin-text-area .value="${this.geminiResponse}"></vaadin-text-area>
+      <div class="flex">
+        <div class="form-block left-form">
+          <h2>${t.form.title}</h2>
+          <label for="projectName">
+            ${t.form.projectName}
+            <vaadin-text-field id="name" required></vaadin-text-field>
+          </label>
+          <label for="description"
+            >${t.form.description}
+            <vaadin-text-field id="description" required></vaadin-text-field>
+          </label>
+          <vaadin-button theme="primary" @click="${this.generateSpec}">
+            ${buttonTitle}
+          </vaadin-button>
+        </div>
+        <div class="form-block">
+          <h2>${t.preview.heading}</h2>
+          <p>${t.preview.editHint}</p>
+          <vaadin-text-area .value="${this.geminiResponse}"></vaadin-text-area>
+          <p>${t.preview.askAIHint}</p>
+          <vaadin-text-area></vaadin-text-area>
+          <export-panel></export-panel>
+        </div>
+      </div>
     `;
   }
 

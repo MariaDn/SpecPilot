@@ -1,6 +1,6 @@
 import { LitElement, css } from 'lit';
 
-export class ExportPanelCss extends LitElement {
+export class ExportCss extends LitElement {
   static override styles = css`
     vaadin-button {
       cursor: pointer;

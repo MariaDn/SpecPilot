@@ -1,13 +1,13 @@
 import { LitElement, html, css } from 'lit';
 import { property } from 'lit/decorators';
 import { t } from '../i18n/locales';
-import { ExportPanelCss } from './ExportPanelCss';
+import { ExportCss } from './ExportCss';
 import '@vaadin/text-area';
 import '@vaadin/button';
 
 class EditorArea extends LitElement {
   static styles = [
-    ExportPanelCss.styles,
+    ExportCss.styles,
     css`
     :host {
       display: flex;
