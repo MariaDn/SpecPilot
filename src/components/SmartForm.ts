@@ -4,6 +4,7 @@ import { t, localeContext, Translations } from '../i18n/locales';
 import { consume } from '@lit/context';
 import '@vaadin/button';
 import '@vaadin/text-field';
+import '@vaadin/checkbox';
 import { TextArea } from '@vaadin/text-area';
 import { callPublicGemini } from '../gemini';
 import { ExportCss } from './ExportCss';
@@ -31,13 +32,19 @@ class SmartForm extends LitElement {
 
     .form-block h2 {
       text-align: center;
+      color: #ffffff;
     }
 
     label {
       display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      margin-bottom: 12px;
+      color: #e0e0e0;
+    }
+
+    .label-text {
+      margin-bottom: 6px;
+      font-weight: 500;
     }
 
     pre {
@@ -51,6 +58,25 @@ class SmartForm extends LitElement {
       gap: 32px;
       flex-wrap: wrap;
     }
+
+    .form-section {
+      border-top: 1px solid #444;
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+    
+    .form-section-title {
+      font-weight: 600;
+      color: #adb5bd;
+      margin-bottom: 12px;
+    }
+    
+    .option-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
   `];
 
   @state() geminiResponse: string = '';
@@ -58,6 +84,10 @@ class SmartForm extends LitElement {
 
   @query('#name') nameField!: TextArea;
   @query('#description') descriptionField!: TextArea;
+  @query('#timeline') timelineField!: TextArea;
+  @query('#budget') budgetField!: TextArea;
+  @query('#audience') audienceField!: TextArea;
+  @query('#objectives') objectivesField!: TextArea;
 
   render() {
     const buttonTitle = this.isGenerating
@@ -67,14 +97,69 @@ class SmartForm extends LitElement {
       <div class="flex">
         <div class="form-block left-form">
           <h2>${t.form.title}</h2>
-          <label for="projectName">
-            ${t.form.projectName}
-            <vaadin-text-field id="name" required></vaadin-text-field>
-          </label>
-          <label for="description"
-            >${t.form.description}
-            <vaadin-text-field id="description" required></vaadin-text-field>
-          </label>
+          
+          <!-- Basic Info Section -->
+          <div class="form-section">
+            <div class="form-section-title">Basic Information</div>
+            <label>
+              <span class="label-text">${t.form.projectName}</span>
+              <vaadin-text-field id="name" required></vaadin-text-field>
+            </label>
+            <label>
+              <span class="label-text">${t.form.description}</span>
+              <vaadin-text-area id="description" required></vaadin-text-area>
+            </label>
+          </div>
+          
+          <!-- Project Details Section -->
+          <div class="form-section">
+            <div class="form-section-title">Project Details</div>
+            <label>
+              <span class="label-text">Project Timeline</span>
+              <vaadin-text-field id="timeline" placeholder="e.g., 3 months"></vaadin-text-field>
+            </label>
+            <label>
+              <span class="label-text">Budget Range</span>
+              <vaadin-text-field id="budget" placeholder="e.g., $5,000-$10,000"></vaadin-text-field>
+            </label>
+          </div>
+          
+          <!-- Target & Goals Section -->
+          <div class="form-section">
+            <div class="form-section-title">Target & Goals</div>
+            <label>
+              <span class="label-text">Target Audience</span>
+              <vaadin-text-area id="audience" placeholder="Who will use this product?"></vaadin-text-area>
+            </label>
+            <label>
+              <span class="label-text">Project Objectives</span>
+              <vaadin-text-area id="objectives" placeholder="What are your main goals?"></vaadin-text-area>
+            </label>
+          </div>
+          
+          <!-- Technical Preferences -->
+          <div class="form-section">
+            <div class="form-section-title">Technical Preferences</div>
+            <label>
+              <span class="label-text">Preferred Technologies</span>
+              <div class="option-group">
+                <vaadin-checkbox>Web</vaadin-checkbox>
+                <vaadin-checkbox>Mobile</vaadin-checkbox>
+                <vaadin-checkbox>Desktop</vaadin-checkbox>
+                <vaadin-checkbox>Cloud</vaadin-checkbox>
+              </div>
+            </label>
+            <label>
+              <span class="label-text">Integration Requirements</span>
+              <div class="option-group">
+                <vaadin-checkbox>APIs</vaadin-checkbox>
+                <vaadin-checkbox>Payment Systems</vaadin-checkbox>
+                <vaadin-checkbox>Social Media</vaadin-checkbox>
+                <vaadin-checkbox>Analytics</vaadin-checkbox>
+              </div>
+            </label>
+          </div>
+          
           <vaadin-button theme="primary" @click="${this.generateSpec}">
             ${buttonTitle}
           </vaadin-button>
@@ -82,9 +167,9 @@ class SmartForm extends LitElement {
         <div class="form-block">
           <h2>${t.preview.heading}</h2>
           <p>${t.preview.editHint}</p>
-          <vaadin-text-area .value="${this.geminiResponse}"></vaadin-text-area>
+          <vaadin-text-area .value="${this.geminiResponse}" style="min-height: 400px;"></vaadin-text-area>
           <p>${t.preview.askAIHint}</p>
-          <vaadin-text-area></vaadin-text-area>
+          <vaadin-text-area placeholder="Ask a question to improve your specification..."></vaadin-text-area>
           <export-panel></export-panel>
         </div>
       </div>
@@ -93,17 +178,52 @@ class SmartForm extends LitElement {
 
   async generateSpec() {
     const name = this.nameField.value || 'SpecPilot';
-    const description =
-      this.descriptionField.value ||
+    const description = this.descriptionField.value || 
       'Quickly generate high-quality specifications for your projects.';
+    const timeline = this.timelineField?.value || '';
+    const budget = this.budgetField?.value || '';
+    const audience = this.audienceField?.value || '';
+    const objectives = this.objectivesField?.value || '';
+    
+    // Get checked technologies
+    const techCheckboxes = this.shadowRoot?.querySelectorAll('.option-group:first-of-type vaadin-checkbox');
+    const selectedTech = Array.from(techCheckboxes || [])
+      .filter((checkbox: any) => checkbox.checked)
+      .map((checkbox: any) => checkbox.textContent)
+      .join(', ');
+      
+    // Get checked integrations
+    const integrationCheckboxes = this.shadowRoot?.querySelectorAll('.option-group:last-of-type vaadin-checkbox');
+    const selectedIntegrations = Array.from(integrationCheckboxes || [])
+      .filter((checkbox: any) => checkbox.checked)
+      .map((checkbox: any) => checkbox.textContent)
+      .join(', ');
+    
     console.log(name, description);
 
-    const prompt = `Generate a specification for the project given name and short description.
+    const prompt = `Generate a technical specification for the project with the following details:
     
-    Name: ${name}.
-
-    Description: ${description}.
+    Project Name: ${name}
+    Project Description: ${description}
+    ${timeline ? `Timeline: ${timeline}` : ''}
+    ${budget ? `Budget: ${budget}` : ''}
+    ${audience ? `Target Audience: ${audience}` : ''}
+    ${objectives ? `Objectives: ${objectives}` : ''}
+    ${selectedTech ? `Technologies: ${selectedTech}` : ''}
+    ${selectedIntegrations ? `Integrations: ${selectedIntegrations}` : ''}
+    
+    Please include the following sections:
+    1. Project Overview
+    2. Goals and Objectives
+    3. Target Audience
+    4. Technical Requirements
+    5. Features and Functionality
+    6. Timeline and Milestones
+    7. Budget Considerations
+    
+    Make the specification detailed, well-structured, and professional.
     `;
+    
     try {
       this.isGenerating = true;
       this.geminiResponse = await callPublicGemini(prompt);
@@ -113,7 +233,17 @@ class SmartForm extends LitElement {
 
     this.dispatchEvent(
       new CustomEvent('spec-generated', {
-        detail: { response: this.geminiResponse, name, description },
+        detail: { 
+          response: this.geminiResponse, 
+          name, 
+          description,
+          timeline,
+          budget,
+          audience,
+          objectives,
+          selectedTech,
+          selectedIntegrations
+        },
       })
     );
   }
