@@ -1,6 +1,6 @@
-const SUPA_SECRETR_GEMINI_API_KEY = '';
+const SUPA_SECRETR_GEMINI_API_KEY = 'AIzaSyCRBTgWASk9nnlk_h6WPgmWekHxGIpvRCM';
 
-const PUBLIC_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${SUPA_SECRETR_GEMINI_API_KEY}`;
+const PUBLIC_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${SUPA_SECRETR_GEMINI_API_KEY}`;
 
 declare interface TextPart {
   text: string;
