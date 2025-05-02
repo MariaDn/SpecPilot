@@ -25,6 +25,7 @@
     "@vaadin/button": "^24.7.2",
     "@vaadin/checkbox": "^24.7.2",
     "@vaadin/menu-bar": "^24.7.2",
+    "@vaadin/notification": "^24.7.5",
     "@vaadin/rich-text-editor": "^24.7.2",
     "@vaadin/router": "^1.7.5",
     "@vaadin/scroller": "^24.7.2",

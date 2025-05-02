@@ -19,7 +19,7 @@ export const ua = {
   preview: {
     heading: 'Згенероване технічне завдання',
     editHint: 'Ви можете редагувати ТЗ вручну нижче',
-    askAIHint: 'Запитайте AI про покращення вашого ТЗ:',
+    askAIHint: 'Запитайте AI про покращення вашого ТЗ',
   },
   feedback: {
     askFeedback: 'Це було корисно?',
@@ -28,7 +28,7 @@ export const ua = {
   export: {
     saveAsPDF: 'Зберегти як PDF',
     saveAsMarkdown: 'Зберегти як Markdown',
-    copyLink: 'Скопіювати посилання',
+    copyLink: 'Скопіювати',
   },
   hero: {
     title: 'Раді бачити вас у SpecPilot',

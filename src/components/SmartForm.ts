@@ -55,7 +55,7 @@ class SmartForm extends LitElement {
 
     .flex {
       display: flex;
-      gap: 32px;
+      gap: 40px;
       flex-wrap: wrap;
     }
 
@@ -100,66 +100,42 @@ class SmartForm extends LitElement {
           
           <!-- Basic Info Section -->
           <div class="form-section">
-            <div class="form-section-title">Basic Information</div>
+            <div class="form-section-title">${t.form.basicInfo}</div>
             <label>
               <span class="label-text">${t.form.projectName}</span>
-              <vaadin-text-field id="name" required></vaadin-text-field>
+              <vaadin-text-field id="name"></vaadin-text-field>
             </label>
             <label>
               <span class="label-text">${t.form.description}</span>
-              <vaadin-text-area id="description" required></vaadin-text-area>
+              <vaadin-text-area id="description"></vaadin-text-area>
             </label>
           </div>
           
           <!-- Project Details Section -->
           <div class="form-section">
-            <div class="form-section-title">Project Details</div>
+            <div class="form-section-title">${t.form.projectDetails}</div>
             <label>
-              <span class="label-text">Project Timeline</span>
-              <vaadin-text-field id="timeline" placeholder="e.g., 3 months"></vaadin-text-field>
+              <span class="label-text">${t.form.timeline}</span>
+              <vaadin-text-field id="timeline"></vaadin-text-field>
             </label>
             <label>
-              <span class="label-text">Budget Range</span>
-              <vaadin-text-field id="budget" placeholder="e.g., $5,000-$10,000"></vaadin-text-field>
+              <span class="label-text">${t.form.budget}</span>
+              <vaadin-text-field id="budget"></vaadin-text-field>
             </label>
           </div>
           
           <!-- Target & Goals Section -->
           <div class="form-section">
-            <div class="form-section-title">Target & Goals</div>
+            <div class="form-section-title">${t.form.targetGoals}</div>
             <label>
-              <span class="label-text">Target Audience</span>
-              <vaadin-text-area id="audience" placeholder="Who will use this product?"></vaadin-text-area>
+              <span class="label-text">${t.form.audience}</span>
+              <vaadin-text-area id="audience"></vaadin-text-area>
             </label>
             <label>
-              <span class="label-text">Project Objectives</span>
-              <vaadin-text-area id="objectives" placeholder="What are your main goals?"></vaadin-text-area>
-            </label>
-          </div>
-          
-          <!-- Technical Preferences -->
-          <div class="form-section">
-            <div class="form-section-title">Technical Preferences</div>
-            <label>
-              <span class="label-text">Preferred Technologies</span>
-              <div class="option-group">
-                <vaadin-checkbox>Web</vaadin-checkbox>
-                <vaadin-checkbox>Mobile</vaadin-checkbox>
-                <vaadin-checkbox>Desktop</vaadin-checkbox>
-                <vaadin-checkbox>Cloud</vaadin-checkbox>
-              </div>
-            </label>
-            <label>
-              <span class="label-text">Integration Requirements</span>
-              <div class="option-group">
-                <vaadin-checkbox>APIs</vaadin-checkbox>
-                <vaadin-checkbox>Payment Systems</vaadin-checkbox>
-                <vaadin-checkbox>Social Media</vaadin-checkbox>
-                <vaadin-checkbox>Analytics</vaadin-checkbox>
-              </div>
+              <span class="label-text">${t.form.objectives}</span>
+              <vaadin-text-area id="objectives"></vaadin-text-area>
             </label>
           </div>
-          
           <vaadin-button theme="primary" @click="${this.generateSpec}">
             ${buttonTitle}
           </vaadin-button>
@@ -169,7 +145,7 @@ class SmartForm extends LitElement {
           <p>${t.preview.editHint}</p>
           <vaadin-text-area .value="${this.geminiResponse}" style="min-height: 400px;"></vaadin-text-area>
           <p>${t.preview.askAIHint}</p>
-          <vaadin-text-area placeholder="Ask a question to improve your specification..."></vaadin-text-area>
+          <vaadin-text-area></vaadin-text-area>
           <export-panel></export-panel>
         </div>
       </div>

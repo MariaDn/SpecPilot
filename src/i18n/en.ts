@@ -19,7 +19,7 @@ export const en = {
   preview: {
     heading: 'Generated Technical Specification',
     editHint: 'You can edit this specification manually below',
-    askAIHint: 'Ask AI assistant to improve your specification:',
+    askAIHint: 'Ask AI assistant to improve your specification',
   },
   feedback: {
     askFeedback: 'Was this helpful?',
@@ -28,7 +28,7 @@ export const en = {
   export: {
     saveAsPDF: 'Save as PDF',
     saveAsMarkdown: 'Export as Markdown',
-    copyLink: 'Copy Link',
+    copyLink: 'Copy',
   },
   hero: {
     title: 'Welcome to SpecPilot',

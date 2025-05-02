@@ -2,7 +2,8 @@ import { LitElement, html, css } from 'lit';
 import { t } from '../i18n/locales';
 import '@vaadin/button';
 import { ExportCss } from './ExportCss';
-import { HTMLInputElement, HTMLTextAreaElement } from 'typescript';
+import { TextArea } from '@vaadin/text-area';
+import { Notification } from '@vaadin/notification';
 
 class ExportPanel extends LitElement {
   static override styles = [
@@ -33,7 +34,7 @@ class ExportPanel extends LitElement {
 
   exportPDF() {
     // Get the content from the text area (specification)
-    const textAreaElement = this.parentElement?.querySelector('vaadin-text-area') as HTMLTextAreaElement;
+    const textAreaElement = this.parentElement?.querySelector('vaadin-text-area') as TextArea;
     if (!textAreaElement) {
       console.error('Text area element not found');
       return;
@@ -108,7 +109,8 @@ class ExportPanel extends LitElement {
     if (!textAreaElement) return;
     
     const content = textAreaElement.value;
-    const projectName = document.querySelector('#name')?.value || 'SpecPilot';
+    const projectNameElement = document.querySelector('#name') as TextArea;
+    const projectName = projectNameElement?.value || 'SpecPilot';
     
     // Create a simple markdown conversion
     const markdown = `# ${projectName} - Technical Specification\n\n${content}`;
