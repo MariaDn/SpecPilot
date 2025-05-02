@@ -29,7 +29,7 @@ class App extends LitElement {
 
     language-selector {
       position: absolute;
-      bottom: 10px;
+      top: 30px;
       right: 10px;
     }
   `;

@@ -42,24 +42,6 @@ button:hover {
   --button-hover-color: #3700b3;
 }
 
-/* App */
-.hero {
-  text-align: center;
-  padding: 50px 20px;
-}
-
-.hero h1 {
-  font-size: 2.5em;
-}
-
-.hero p {
-  font-size: 1.2em;
-}
-
-.hero button {
-  font-size: 1em;
-}
-
 /* Smart Form */
 form {
   display: flex;

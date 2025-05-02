@@ -10,11 +10,24 @@ class LanguageSelector extends LitElement {
       padding: 5px;
       margin: 10px;
     }
+
+    .custom-select {
+      background-color: #1e1e1e;
+      color: #ffffff;
+      padding: 8px;
+      border: 1px solid #ffffff;
+      border-radius: 8px;
+      font-size: 14px;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      cursor: pointer;
+    }
   `;
 
   render() {
     return html`
-      <select @change="${this.changeLanguage}">
+      <select class="custom-select" @change="${this.changeLanguage}">
         <option value="en" ?selected=${currentLanguage === 'en'}>
           English
         </option>
