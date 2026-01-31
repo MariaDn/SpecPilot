@@ -31,7 +31,12 @@ export const en = {
     copyLink: 'Copy',
   },
   hero: {
-    title: 'Welcome to SpecPilot 🚀',
+    title: 'Welcome to SpecPilot',
     description: 'Quickly generate high-quality specifications for your projects.',
+  },
+  ai_status: {
+    loading: "Checking AI connection...",
+    online: "AI Online",
+    offline: "AI Offline"
   },
 };

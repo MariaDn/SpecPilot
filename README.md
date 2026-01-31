@@ -25,6 +25,4 @@ SpecPilot is an AI-powered assistant that transforms short project briefs into d
 ## Getting Started
 
 1. Clone the repository
-2. Install dependencies: `npm install`
-3. Start the development server: `npm start`
-4. Build the project: `npm run build`
+2. Run docker-compose up

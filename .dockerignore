@@ -1,0 +1,25 @@
+# Git
+.git
+.gitignore
+
+# Database storage
+qdrant_storage/
+
+# Environment variables
+.env
+
+# Backend specific (Python)
+backend/venv/
+backend/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Frontend specific (Node/Parcel)
+frontend/node_modules/
+frontend/.parcel-cache/
+frontend/dist/
+
+# Documentation and project files
+README.md
+**/*.DS_Store

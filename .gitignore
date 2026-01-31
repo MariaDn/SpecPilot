@@ -1,15 +1,21 @@
-# node
-node_modules/
-dist/
-.cache/
-*.log
-
-# parcel
-.parcel-cache/
-
-# OS
 .DS_Store
-Thumbs.db
+.LSOverride
 
-# others
+frontend/node_modules/
+frontend/dist/
+frontend/.parcel-cache/
+frontend/npm-debug.log*
+
+backend/venv/
+backend/.venv/
+**/__pycache__/
+backend/*.py[cod]
 .env
+
+qdrant_storage/
+backend/app/data/
+*.db
+*.sqlite3
+
+.vscode/
+*.log

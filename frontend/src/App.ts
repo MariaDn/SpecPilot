@@ -1,10 +1,12 @@
 import { LitElement, html, css } from "lit";
-import { state } from "lit/decorators";
+import { customElement, state } from 'lit/decorators.js';
 import "./components/HeroSection";
 import "./components/SmartForm";
 import "./components/EditorArea";
 import "./components/LanguageSelector";
+import "./components/AIStatusIndicator";
 
+@customElement('app-root')
 class App extends LitElement {
   static styles = css`
     :host {
@@ -32,15 +34,19 @@ class App extends LitElement {
       top: 30px;
       right: 10px;
     }
+
+    ai-status-indicator {
+      position: absolute;
+      top: 30px;
+      left: 20px;
+    }
   `;
 
   render() {
     return html`
-      <language-selector></language-selector>
+      <ai-status-indicator></ai-status-indicator> <language-selector></language-selector>
       <hero-section></hero-section>
       <smart-form></smart-form>
     `;
   }
 }
-
-customElements.define('app-root', App);

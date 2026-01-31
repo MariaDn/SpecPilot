@@ -77,17 +77,37 @@ class SmartForm extends LitElement {
       gap: 10px;
       margin-bottom: 12px;
     }
+
+    .error-container {
+      background-color: #ff4d4f20;
+      border: 1px solid #ff4d4f;
+      color: #ff4d4f;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   `];
 
   @state() geminiResponse: string = '';
   @state() isGenerating = false;
+  @state() private errorMessage: string = '';
 
-  @query('#name') nameField!: TextArea;
-  @query('#description') descriptionField!: TextArea;
-  @query('#timeline') timelineField!: TextArea;
-  @query('#budget') budgetField!: TextArea;
-  @query('#audience') audienceField!: TextArea;
-  @query('#objectives') objectivesField!: TextArea;
+  @query('#name') nameField!: any;
+  @query('#description') descriptionField!: any;
+  @query('#timeline') timelineField!: any;
+  @query('#budget') budgetField!: any;
+  @query('#audience') audienceField!: any;
+  @query('#objectives') objectivesField!: any;
 
   render() {
     const buttonTitle = this.isGenerating
@@ -136,7 +156,15 @@ class SmartForm extends LitElement {
               <vaadin-text-area id="objectives"></vaadin-text-area>
             </label>
           </div>
-          <vaadin-button theme="primary" @click="${this.generateSpec}">
+          <div class="form-block left-form">
+            ${this.errorMessage 
+              ? html`
+                  <div class="error-container">
+                    <span>⚠️</span>
+                    <div>${this.errorMessage}</div>
+                  </div>` 
+              : nothing}
+          <vaadin-button theme="primary" @click="${this.generateSpec}" ?disabled="${this.isGenerating}">
             ${buttonTitle}
           </vaadin-button>
         </div>
@@ -161,48 +189,48 @@ class SmartForm extends LitElement {
     const audience = this.audienceField?.value || '';
     const objectives = this.objectivesField?.value || '';
     
-    // Get checked technologies
-    const techCheckboxes = this.shadowRoot?.querySelectorAll('.option-group:first-of-type vaadin-checkbox');
-    const selectedTech = Array.from(techCheckboxes || [])
-      .filter((checkbox: any) => checkbox.checked)
-      .map((checkbox: any) => checkbox.textContent)
-      .join(', ');
-      
-    // Get checked integrations
-    const integrationCheckboxes = this.shadowRoot?.querySelectorAll('.option-group:last-of-type vaadin-checkbox');
-    const selectedIntegrations = Array.from(integrationCheckboxes || [])
-      .filter((checkbox: any) => checkbox.checked)
-      .map((checkbox: any) => checkbox.textContent)
-      .join(', ');
-    
-    console.log(name, description);
-
-    const prompt = `Generate a technical specification for the project with the following details:
-    
-    Project Name: ${name}
-    Project Description: ${description}
-    ${timeline ? `Timeline: ${timeline}` : ''}
-    ${budget ? `Budget: ${budget}` : ''}
-    ${audience ? `Target Audience: ${audience}` : ''}
-    ${objectives ? `Objectives: ${objectives}` : ''}
-    ${selectedTech ? `Technologies: ${selectedTech}` : ''}
-    ${selectedIntegrations ? `Integrations: ${selectedIntegrations}` : ''}
-    
-    Please include the following sections:
-    1. Project Overview
-    2. Goals and Objectives
-    3. Target Audience
-    4. Technical Requirements
-    5. Features and Functionality
-    6. Timeline and Milestones
-    7. Budget Considerations
-    
-    Make the specification detailed, well-structured, and professional.
+    const fullPrompt = `Generate a technical specification for the project:
+    Name: ${name}
+    Description: ${description}
+    Timeline: ${timeline}
+    Budget: ${budget}
+    Audience: ${audience}
+    Objectives: ${objectives}
     `;
     
+    this.errorMessage = '';
+    this.isGenerating = true;
+
     try {
-      this.isGenerating = true;
-      this.geminiResponse = await callPublicGemini(prompt);
+      const response = await fetch('http://localhost:8000/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ description: fullPrompt }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 422) {
+          throw new Error('Помилка валідації: Перевірте введені дані.');
+        } else if (response.status === 500) {
+          throw new Error('Серверна помилка: Можливо, Qdrant або модель MamayLM недоступні.');
+        } else {
+          throw new Error(`Помилка сервера: Статус ${response.status}`);
+        }
+      }
+
+      const data = await response.json();
+      
+      this.geminiResponse = data.generated_text;
+
+    } catch (error: any) {
+      console.error("Помилка при генерації:", error);
+      if (error.message === 'Failed to fetch') {
+        this.errorMessage = 'Неможливо з’єднатися з бекендом. Перевірте, чи запущено Docker-контейнери.';
+    } else {
+        this.errorMessage = error.message || 'Сталася невідома помилка.';
+    }
     } finally {
       this.isGenerating = false;
     }
@@ -212,13 +240,7 @@ class SmartForm extends LitElement {
         detail: { 
           response: this.geminiResponse, 
           name, 
-          description,
-          timeline,
-          budget,
-          audience,
-          objectives,
-          selectedTech,
-          selectedIntegrations
+          description
         },
       })
     );
