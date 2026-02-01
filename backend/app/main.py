@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.core.rag_logic import rag_engine
 from app.core.ai_client import ai_client
+from typing import Dict, Any, Optional
 
 app = FastAPI(title="ENFORENCE AI Engine")
 
@@ -14,23 +15,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class QueryRequest(BaseModel):
-  description: str
+class GenerateRequest(BaseModel):
+  mode: str
+  questionnaire: Dict[str, Any]
 
 @app.post("/api/generate")
-async def generate_spec(data: QueryRequest):
-  context = rag_engine.get_context(data.description)
-  
-  generated_text = await ai_client.generate_response(
-    prompt=data.description,
-    context=context
-  )
-  
-  return {
-    "status": "success",
-    "generated_text": generated_text,
-    "context_used": context
-  }
+async def generate_spec(data: GenerateRequest):
+    search_query = data.questionnaire.get("project_info", {}).get("goals", {}).get("problem_statement", "")
+    
+    rag_context = rag_engine.get_context(search_query) if search_query else []
+    
+    generated_text = await ai_client.generate_response(
+        questionnaire=data.questionnaire,
+        rag_chunks=rag_context
+    )
+    
+    return {
+        "status": "success",
+        "generated_text": generated_text,
+        "rag_context": rag_context
+    }
 
 @app.get("/api/health/ai")
 async def health_check_ai():

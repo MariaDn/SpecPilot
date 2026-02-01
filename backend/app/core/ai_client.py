@@ -33,20 +33,25 @@ class ExternalAIClient:
       except Exception as e:
         return {"status": "error", "error": str(e)}
 
-  async def generate_response(self, prompt: str, context: str):
+  async def generate_response(self, questionnaire: dict, rag_chunks: list):
+    system_instruction = (
+      "Ти — професійний Requirements Engineer. "
+      "Твоє завдання: згенерувати ТЗ за структурою КМУ №205, використовуючи наданий контекст. "
+      "Дані з 'questionnaire' — це прямі відповіді замовника. "
+      "Дані з 'rag_chunks' — це нормативні вимоги та зразки. "
+      "Якщо в опитувальнику бракує даних для розділу — вкажи це."
+    )
+
     payload = {
       "model": self.model,
       "messages": [
-        {
-          "role": "system", 
-          "content": "Ти — професійний IT-архітектор. Використовуй наданий контекст для створення ТЗ."
-        },
-        {
-          "role": "user", 
-          "content": f"Контекст: {context}\n\nЗапит: {prompt}"
-        }
+          {"role": "system", "content": system_instruction},
+          {
+              "role": "user", 
+              "content": f"Context Questionnaire: {questionnaire}\n\nRAG Reference Data: {rag_chunks}"
+          }
       ],
-      "temperature": 0.7
+      "temperature": 0.2
     }
 
     headers = {
@@ -54,7 +59,7 @@ class ExternalAIClient:
       "Content-Type": "application/json"
     }
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=90.0) as client:
       try:
         response = await client.post(self.api_url, json=payload, headers=headers)
         response.raise_for_status()
