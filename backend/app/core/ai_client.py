@@ -1,5 +1,6 @@
 import os
 import httpx
+from typing import Any
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -33,25 +34,16 @@ class ExternalAIClient:
       except Exception as e:
         return {"status": "error", "error": str(e)}
 
-  async def generate_response(self, questionnaire: dict, rag_chunks: list):
-    system_instruction = (
-      "Ти — професійний Requirements Engineer. "
-      "Твоє завдання: згенерувати ТЗ за структурою КМУ №205, використовуючи наданий контекст. "
-      "Дані з 'questionnaire' — це прямі відповіді замовника. "
-      "Дані з 'rag_chunks' — це нормативні вимоги та зразки. "
-      "Якщо в опитувальнику бракує даних для розділу — вкажи це."
-    )
-
+  async def generate_structured_response(self, request_data: Any):
     payload = {
       "model": self.model,
-      "messages": [
-          {"role": "system", "content": system_instruction},
-          {
-              "role": "user", 
-              "content": f"Context Questionnaire: {questionnaire}\n\nRAG Reference Data: {rag_chunks}"
-          }
-      ],
-      "temperature": 0.2
+      "mode": request_data.mode,
+      "messages": [m.dict() for m in request_data.messages],
+      "context": request_data.context.dict(),
+      "generation_config": {
+        "temperature": 0.2,
+        "max_tokens": 2048
+      }
     }
 
     headers = {
@@ -59,13 +51,15 @@ class ExternalAIClient:
       "Content-Type": "application/json"
     }
 
-    async with httpx.AsyncClient(timeout=90.0) as client:
+    async with httpx.AsyncClient(timeout=120.0) as client:
       try:
         response = await client.post(self.api_url, json=payload, headers=headers)
         response.raise_for_status()
-        result = response.json()
-        return result['choices'][0]['message']['content']
+        return response.json()
       except Exception as e:
-        return f"Помилка зовнішнього AI: {str(e)}"
+        return {
+          "status": "error",
+          "message": f"AI Client Error: {str(e)}"
+        }
 
 ai_client = ExternalAIClient()

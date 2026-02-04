@@ -1,14 +1,21 @@
+# Web Server
 fastapi
 uvicorn
+python-multipart
 python-dotenv
-qdrant-client
+httpx
+
+# Database & RAG
+sqlalchemy
+asyncpg
+pgvector
+python-docx
+
+# AI & Embeddings
 langchain
-langchain-qdrant
 langchain-huggingface
 langchain-text-splitters
 langchain-community
 sentence-transformers
 transformers
 torch
-peft
-httpx

@@ -1,76 +1,68 @@
 import os
-from dotenv import load_dotenv
-from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient
-from qdrant_client.http import models
+from docx import Document
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import Column, Integer, Text, String, select, text
+from sqlalchemy.orm import declarative_base
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
 
-load_dotenv()
+Base = declarative_base()
+
+class ProjectChunk(Base):
+  __tablename__ = 'project_chunks'
+  id = Column(Integer, primary_key=True)
+  project_id = Column(String, index=True)
+  content = Column(Text)
+  embedding = Column(Vector(768))
 
 class RAGEngine:
   def __init__(self):
-    device = "cpu" 
-        
-    self.embeddings = HuggingFaceEmbeddings(
-      model_name="sentence-transformers/all-mpnet-base-v2",
-      model_kwargs={'device': device}
-    )
+    self.url = os.getenv("DATABASE_URL")
+    self.engine = create_async_engine(self.url)
+    self.async_session = sessionmaker(self.engine, class_=AsyncSession)
+    self.embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+
+  async def ingest_docx(self, project_id: str, file_path: str):
+    doc = Document(file_path)
+    full_text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
     
-    self.client = QdrantClient(
-      host=os.getenv("QDRANT_HOST", "localhost"),
-      port=int(os.getenv("QDRANT_PORT", 6333))
-    )
-    self.collection_name = os.getenv("QDRANT_COLLECTION_NAME", "it_docs")
-    self._ensure_collection_exists()
-    
-    self.vector_store = QdrantVectorStore(
-      client=self.client,
-      collection_name=self.collection_name,
-      embedding=self.embeddings,
-    )
-
-  def _ensure_collection_exists(self):
-    """Створює колекцію, якщо її немає в Qdrant"""
-    collections = self.client.get_collections().collections
-    exists = any(c.name == self.collection_name for c in collections)
-    
-    if not exists:
-      self.client.create_collection(
-        collection_name=self.collection_name,
-        vectors_config=models.VectorParams(size=768, distance=models.Distance.COSINE),
-      )
-      print(f"Колекція '{self.collection_name}' створена успішно.")
-
-  def ingest_documents(self, directory_path: str):
-    """Етап 1: Розбиття на фрагменти та індексація"""
-    if not os.path.exists(directory_path):
-      return f"Помилка: Папка {directory_path} не знайдена."
-
-    loader = DirectoryLoader(directory_path, glob="**/*.md", loader_cls=TextLoader)
-    docs = loader.load()
-
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000, 
-        chunk_overlap=200
+      chunk_size=800, 
+      chunk_overlap=150
     )
-    fragments = text_splitter.split_documents(docs)
-
-    if fragments:
-      self.vector_store.add_documents(fragments)
-      return f"Успішно проіндексовано {len(fragments)} фрагментів."
-    return "Файли не знайдені або порожні."
-
-  def get_context(self, query: str, k: int = 3):
-    """Етап 2: Пошук топ-k фрагментів та формування контексту"""
-    search_results = self.vector_store.similarity_search(query, k=k)
+    texts = text_splitter.split_text(full_text)
     
-    context_parts = []
-    for doc in search_results:
-      source = doc.metadata.get('source', 'Unknown')
-      context_parts.append(f"[Джерело: {source}]\n{doc.page_content}")
-        
-    return "\n---\n".join(context_parts)
+    async with self.async_session() as session:
+      for text in texts:
+        vector = self.embeddings.embed_query(text)
+        chunk = ProjectChunk(
+          project_id=project_id,
+          content=text,
+          embedding=vector
+        )
+        session.add(chunk)
+      await session.commit()
+    return len(texts)
+  
+  async def init_db(self):
+    async with self.engine.begin() as conn:
+      await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+      await conn.run_sync(Base.metadata.create_all)
+    print("DB table is created")
+
+  async def get_context(self, query: str, project_id: str = None):
+    query_vector = self.embeddings.embed_query(query)
+    async with self.async_session() as session:
+      stmt = select(ProjectChunk).order_by(
+        ProjectChunk.embedding.cosine_distance(query_vector)
+      ).limit(3)
+      
+      if project_id:
+        stmt = stmt.where(ProjectChunk.project_id == project_id)
+      
+      result = await session.execute(stmt)
+      return [{"id": str(c.id), "content": c.content} for c in result.scalars().all()]
 
 rag_engine = RAGEngine()

@@ -1,11 +1,29 @@
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.core.rag_logic import rag_engine
 from app.core.ai_client import ai_client
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+from contextlib import asynccontextmanager
+import shutil
+import os
 
-app = FastAPI(title="ENFORENCE AI Engine")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+  try:
+    print("Db initialize")
+    await rag_engine.init_db()
+    print("DB ready")
+  except Exception as e:
+    print(f"DB error: {e}")
+  yield
+  print("Server stopped")
+
+app = FastAPI(
+    title="ENFORENCE AI Engine", 
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,33 +33,53 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class GenerateRequest(BaseModel):
-  mode: str
+class MessageContent(BaseModel):
+  type: str = "text"
+  text: str
+
+class Message(BaseModel):
+  role: str
+  content: List[MessageContent]
+
+class TaskMetadata(BaseModel):
+  tz_structure_version: str = "UA-205-v1"
+  language: str = "uk"
+  project_domain: Optional[str] = None
+
+class ContextData(BaseModel):
   questionnaire: Dict[str, Any]
+  retrieved_chunks: Optional[List[Dict[str, Any]]] = []
+  task_metadata: Optional[TaskMetadata] = None
+
+class GenerateSpecRequest(BaseModel):
+  mode: str
+  messages: List[Message]
+  context: ContextData
+
+@app.post("/api/upload")
+async def upload_project_doc(project_id: str, file: UploadFile = File(...)):
+  temp_path = f"temp_{file.filename}"
+  with open(temp_path, "wb") as buffer:
+    shutil.copyfileobj(file.file, buffer)
+  
+  chunks_count = await rag_engine.ingest_docx(project_id, temp_path)
+  os.remove(temp_path)
+  
+  return {"status": "ok", "project_id": project_id, "chunks_indexed": chunks_count}
 
 @app.post("/api/generate")
-async def generate_spec(data: GenerateRequest):
-    search_query = data.questionnaire.get("project_info", {}).get("goals", {}).get("problem_statement", "")
+async def generate_spec(data: GenerateSpecRequest):
+  if data.mode == "qa_navigation":
+    search_query = data.messages[-1].content[0].text
+  else:
+    search_query = data.context.questionnaire.get("project_info", {}).get("goals", {}).get("problem_statement", "")
+
+  project_id = data.context.task_metadata.project_id if data.context.task_metadata else None
+  retrieved_chunks = await rag_engine.get_context(search_query, project_id=project_id)
     
-    rag_context = rag_engine.get_context(search_query) if search_query else []
-    
-    generated_text = await ai_client.generate_response(
-        questionnaire=data.questionnaire,
-        rag_chunks=rag_context
-    )
-    
-    return {
-        "status": "success",
-        "generated_text": generated_text,
-        "rag_context": rag_context
-    }
+  data.context.retrieved_chunks = retrieved_chunks
+  return await ai_client.generate_structured_response(data)
 
 @app.get("/api/health/ai")
 async def health_check_ai():
-  result = await ai_client.check_connection()
-  return result
-
-@app.post("/api/ingest")
-async def start_ingestion(background_tasks: BackgroundTasks):
-  background_tasks.add_task(rag_engine.ingest_documents, "./data_source")
-  return {"message": "Процес індексації запущено у фоновому режимі."}
+  return await ai_client.check_connection()
