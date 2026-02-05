@@ -17,6 +17,22 @@ export const en = {
     techPreferences: 'Technical Preferences',
     validationError: "Please fill in all required fields marked with an asterisk (*).",
   },
+  navigation: {
+    uploadTitle: "1. Project Context Upload",
+    projectIdLabel: "Project Name/ID (for pgvector)",
+    projectIdPlaceholder: "Enter name...",
+    dropLabel: "Drop .docx project document here",
+    uploadBtn: "Upload and Index in pgvector",
+    assistantTitle: "2. Question to Assistant",
+    statusIndexing: "Document indexing...",
+    statusSuccess: "Indexed succesfully!",
+    assistantQueryLabel: "What exactly do you want to find or clarify?",
+    assistantPlaceholder: "Example: What non-functional security requirements are described in the document?",
+    assistantBtn: "Ask Assistant",
+    assistantSearching: "Searching...",
+    selectProjectLabel: "Select project to ask about",
+    selectProjectPlaceholder: "Choose project from list..."
+  },
   preview: {
     heading: 'Generated Technical Specification',
     editHint: 'You can edit this specification manually below',
@@ -42,6 +58,7 @@ export const en = {
   },
   questionnaire: {
     generate_btn: "Generate Technical Specification",
+    navigation_btn: "Project navigation",
     generating: "Generating...",
     sections: {
       s1: "1. Basic Project Information",

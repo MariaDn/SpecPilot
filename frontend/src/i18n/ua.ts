@@ -17,6 +17,22 @@ export const ua = {
     techPreferences: 'Технічні вимоги',
     validationError: "Будь ласка, заповніть усі обов’язкові поля, позначені зірочкою (*).",
   },
+  navigation: {
+    uploadTitle: "1. Завантаження контексту проекту",
+    projectIdLabel: "Назва/ID Проекту (для pgvector) *",
+    projectIdPlaceholder: "Введіть назву або шифр...",
+    dropLabel: "Перетягніть .docx документ проекту тут",
+    uploadBtn: "Завантажити та індексувати в pgvector",
+    assistantTitle: "2. Запитання до асистента",
+    statusIndexing: "Індексація документа...",
+    statusSuccess: "Документ успішно проіндексовано!",
+    assistantQueryLabel: "Що саме ви хочете знайти або уточнити?",
+    assistantPlaceholder: "Наприклад: Які нефункціональні вимоги до безпеки описані в документі?",
+    assistantBtn: "Запитати асистента",
+    assistantSearching: "Шукаю...",
+    selectProjectLabel: "Оберіть проект для запитання",
+    selectProjectPlaceholder: "Оберіть проект зі списку..."
+  },
   preview: {
     heading: 'Згенероване технічне завдання',
     editHint: 'Ви можете редагувати ТЗ вручну нижче',
@@ -42,6 +58,7 @@ export const ua = {
   },
   questionnaire: {
     generate_btn: "Згенерувати технічну документацію",
+    navigation_btn: "Навігація проектом",
     generating: "Генерація...",
     sections: {
       s1: "1. Базова інформація про проект",

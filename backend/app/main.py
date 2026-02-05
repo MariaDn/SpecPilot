@@ -7,17 +7,18 @@ from typing import Dict, Any, Optional, List
 from contextlib import asynccontextmanager
 import shutil
 import os
+from app.core.logger import logger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
   try:
-    print("Db initialize")
+    logging.info("Db initialize")
     await rag_engine.init_db()
-    print("DB ready")
+    logging.info("DB ready")
   except Exception as e:
-    print(f"DB error: {e}")
+    logger.error(f"DB error: {e}")
   yield
-  print("Server stopped")
+  logging.info("Server stopped")
 
 app = FastAPI(
     title="ENFORENCE AI Engine", 
@@ -83,3 +84,12 @@ async def generate_spec(data: GenerateSpecRequest):
 @app.get("/api/health/ai")
 async def health_check_ai():
   return await ai_client.check_connection()
+
+@app.get("/api/projects")
+async def list_projects():
+  try:
+    projects = await rag_engine.get_all_projects()
+    return {"projects": projects}
+  except Exception as e:
+    logger.error(f"Error loading list of projects: {e}")
+    return {"projects": []}

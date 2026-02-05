@@ -8,13 +8,21 @@ import '@vaadin/button';
 import '@vaadin/text-area';
 import '@vaadin/tabs';
 import '@vaadin/upload';
+import '@vaadin/text-field';
 
 @customElement('smart-form')
 export class SmartForm extends LitElement {
   static override styles = [
     ExportCss.styles,
     css`
-      :host { display: block; width: 100%; }
+      :host { 
+        display: block; 
+        width: 100%;
+        --lumo-body-text-color: #f0f0f0;
+        --lumo-secondary-text-color: #bbbbbb;
+        --lumo-primary-text-color: #58a6ff;
+        --lumo-contrast-10pct: rgba(255, 255, 255, 0.05); 
+      }
       .flex { 
         display: flex; 
         gap: 30px; 
@@ -91,6 +99,31 @@ export class SmartForm extends LitElement {
         margin-bottom: 10px;
         color: white;
       }
+      
+      vaadin-upload::part(label) {
+        color: #ffffff !important;
+        font-size: 14px;
+        margin-bottom: 8px;
+      }
+
+      vaadin-upload-file::part(start-button) {
+        display: none !important;
+      }
+
+      vaadin-upload::part(upload-button) {
+        display: none !important;
+      }
+
+      span[slot="drop-label"] {
+        color: #888888 !important;
+      }
+
+      .upload-card {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        padding: 20px;
+        border-radius: 12px;
+      }
     `
   ];
 
@@ -103,12 +136,13 @@ export class SmartForm extends LitElement {
   @state() private activeTab = 0;
   @state() private selectedProjectId = '';
   @state() private navQuery = '';
+  @state() private existingProjects: string[] = [];
 
   render() {
     return html`
       <vaadin-tabs @selected-changed="${(e: any) => this.activeTab = e.detail.value}">
         <vaadin-tab>📝 ${t.questionnaire.generate_btn}</vaadin-tab>
-        <vaadin-tab>🔍 Навігація проектом</vaadin-tab>
+        <vaadin-tab>🔍 ${t.questionnaire.navigation_btn}</vaadin-tab>
       </vaadin-tabs>
 
       <div class="flex">
@@ -341,31 +375,79 @@ export class SmartForm extends LitElement {
 
   renderNavigationForm() {
     return html`
-      <collapsible-section title="1. Завантаження контексту проекту" isOpen>
+      <collapsible-section title=${t.navigation.uploadTitle} isOpen>
         <div class="input-group">
-          <label>Назва/ID Проекту (для pgvector)</label>
-          <input type="text" .value="${this.selectedProjectId}" @input="${(e: any) => this.selectedProjectId = e.target.value}">
+          <label>"${t.navigation.projectIdLabel}")</label>
+          <input 
+            type="text" 
+            .value="${this.selectedProjectId}" 
+            @input="${(e: any) => { 
+              this.selectedProjectId = e.target.value; 
+              this.updateValidation(); 
+            }}"
+            placeholder="${t.navigation.projectIdPlaceholder}"
+          >
         </div>
-        <vaadin-upload 
-          .target="${`http://localhost:8000/api/upload?project_id=${encodeURIComponent(this.selectedProjectId)}`}" 
-          method="POST">
-          <span slot="drop-label">Перетягніть .docx документ проекту тут</span>
+
+        <vaadin-upload
+          id="project-upload"
+          no-auto
+          max-files="1"
+          accept=".docx"
+          .target="${`http://localhost:8000/api/upload?project_id=${encodeURIComponent(this.selectedProjectId)}`}"
+          @files-changed="${(e: any) => {
+            this.hasFile = e.target.files.length > 0;
+            this.updateValidation();
+          }}"
+        >
+          <span slot="drop-label">${t.navigation.dropLabel}</span>
         </vaadin-upload>
+
+        <vaadin-button
+          theme="primary"
+          ?disabled="${!this.canUpload}"
+          @click="${this.handleManualUpload}"
+          style="width: 100%; margin-top: 20px; cursor: ${this.canUpload ? 'pointer' : 'not-allowed'};"
+        >
+          ${t.navigation.uploadBtn}
+        </vaadin-button>
       </collapsible-section>
 
-      <collapsible-section title="2. Запитання до асистента" isOpen>
+      <collapsible-section title=${t.navigation.assistantTitle} isOpen>
         <div class="input-group">
-          <label>Що саме ви хочете знайти або уточнити?</label>
+          <label>${t.navigation.selectProjectLabel}</label>
+          <select 
+            .value="${this.selectedProjectId}" 
+            @change="${(e: any) => this.selectedProjectId = e.target.value}"
+          >
+            <option value="" disabled selected>${t.navigation.selectProjectPlaceholder}</option>
+            ${this.existingProjects.map(p => html`<option value="${p}">${p}</option>`)}
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label>${t.navigation.assistantQueryLabel}</label>
           <vaadin-text-area 
-            placeholder="Наприклад: Які нефункціональні вимоги до безпеки описані в документі?" 
+            placeholder=${t.navigation.assistantPlaceholder} 
             @value-changed="${(e: any) => this.navQuery = e.detail.value}">
           </vaadin-text-area>
         </div>
         <vaadin-button theme="primary" @click="${this.runNavigation}" ?disabled="${this.isGenerating}" style="width: 100%;">
-          ${this.isGenerating ? 'Шукаю...' : 'Запитати асистента'}
+          ${this.isGenerating ? t.navigation.assistantSearching : t.navigation.assistantBtn}
         </vaadin-button>
       </collapsible-section>
     `;
+  }
+
+  private updateValidation() {
+    this.canUpload = this.selectedProjectId.trim().length > 0 && this.hasFile;
+  }
+
+  private handleManualUpload() {
+    const upload = (this as unknown as HTMLElement).shadowRoot?.querySelector('#project-upload') as any;
+    if (upload) {
+      upload.uploadFiles();
+    }
   }
 
   async generateSpec() {
@@ -429,6 +511,16 @@ export class SmartForm extends LitElement {
     }
   }
 
+  async fetchProjects() {
+    try {
+      const res = await fetch('http://localhost:8000/api/projects');
+      const data = await res.json();
+      this.existingProjects = data.projects;
+    } catch (e) {
+      console.error("Error while loading list of projects");
+    }
+  }
+
   private _serializeForm(form: HTMLFormElement) {
     const formData = new FormData(form);
     const obj: any = {};
@@ -437,6 +529,12 @@ export class SmartForm extends LitElement {
       keys.reduce((acc, part, i) => acc[part] = i === keys.length - 1 ? value : (acc[part] || {}), obj);
     });
     return obj;
+  }
+
+  updated(changedProperties: Map<string, any>) {
+    if (changedProperties.has('activeTab') && this.activeTab === 1) {
+      this.fetchProjects();
+    }
   }
 
   private _handleInput() {

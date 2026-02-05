@@ -1,9 +1,10 @@
+from app.core.logger import logger
 import os
 from docx import Document
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, Integer, Text, String, select, text
+from sqlalchemy import Column, Integer, Text, String, select, text, func
 from sqlalchemy.orm import declarative_base
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -32,8 +33,11 @@ class RAGEngine:
       chunk_size=800, 
       chunk_overlap=150
     )
+
+    logger.info(f"Start downloading: {project_id}")
     texts = text_splitter.split_text(full_text)
-    
+    logger.info(f"Document splitted {len(texts)} chanks.")
+
     async with self.async_session() as session:
       for text in texts:
         vector = self.embeddings.embed_query(text)
@@ -44,13 +48,14 @@ class RAGEngine:
         )
         session.add(chunk)
       await session.commit()
+    logger.info(f"All chunks downloaded in pgvector.")
     return len(texts)
   
   async def init_db(self):
     async with self.engine.begin() as conn:
       await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
       await conn.run_sync(Base.metadata.create_all)
-    print("DB table is created")
+    logging.info("DB table is created")
 
   async def get_context(self, query: str, project_id: str = None):
     query_vector = self.embeddings.embed_query(query)
@@ -64,5 +69,16 @@ class RAGEngine:
       
       result = await session.execute(stmt)
       return [{"id": str(c.id), "content": c.content} for c in result.scalars().all()]
+
+  async def get_all_projects(self):
+    async with self.async_session() as session:
+      try:
+        stmt = select(ProjectChunk.project_id).distinct() 
+        result = await session.execute(stmt)
+        
+        return [row[0] for row in result.all()]
+      except Exception as e:
+        logger.error(f"Error while doqnloading projects: {e}")
+        return []
 
 rag_engine = RAGEngine()
