@@ -6,7 +6,9 @@ python-dotenv
 httpx
 
 # Database & RAG
+alembic
 sqlalchemy
+psycopg2-binary
 asyncpg
 pgvector
 python-docx
@@ -15,7 +17,12 @@ python-docx
 langchain
 langchain-huggingface
 langchain-text-splitters
+langchain-experimental
 langchain-community
 sentence-transformers
 transformers
 torch
+
+matplotlib
+seaborn
+scikit-learn
