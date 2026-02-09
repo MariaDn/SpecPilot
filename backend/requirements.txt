@@ -12,6 +12,7 @@ psycopg2-binary
 asyncpg
 pgvector
 python-docx
+docx2txt
 
 # AI & Embeddings
 langchain
@@ -21,7 +22,6 @@ langchain-experimental
 langchain-community
 sentence-transformers
 transformers
-torch
 
 matplotlib
 seaborn

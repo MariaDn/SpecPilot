@@ -377,7 +377,7 @@ export class SmartForm extends LitElement {
     return html`
       <collapsible-section title=${t.navigation.uploadTitle} isOpen>
         <div class="input-group">
-          <label>"${t.navigation.projectIdLabel}")</label>
+          <label>${t.navigation.projectIdLabel}</label>
           <input 
             type="text" 
             .value="${this.selectedProjectId}" 

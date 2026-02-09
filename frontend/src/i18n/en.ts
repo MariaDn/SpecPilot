@@ -19,10 +19,10 @@ export const en = {
   },
   navigation: {
     uploadTitle: "1. Project Context Upload",
-    projectIdLabel: "Project Name/ID (for pgvector)",
+    projectIdLabel: "Project Name *",
     projectIdPlaceholder: "Enter name...",
     dropLabel: "Drop .docx project document here",
-    uploadBtn: "Upload and Index in pgvector",
+    uploadBtn: "Upload",
     assistantTitle: "2. Question to Assistant",
     statusIndexing: "Document indexing...",
     statusSuccess: "Indexed succesfully!",

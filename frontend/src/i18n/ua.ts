@@ -19,10 +19,10 @@ export const ua = {
   },
   navigation: {
     uploadTitle: "1. Завантаження контексту проекту",
-    projectIdLabel: "Назва/ID Проекту (для pgvector) *",
+    projectIdLabel: "Назва проекту *",
     projectIdPlaceholder: "Введіть назву або шифр...",
     dropLabel: "Перетягніть .docx документ проекту тут",
-    uploadBtn: "Завантажити та індексувати в pgvector",
+    uploadBtn: "Завантажити",
     assistantTitle: "2. Запитання до асистента",
     statusIndexing: "Індексація документа...",
     statusSuccess: "Документ успішно проіндексовано!",

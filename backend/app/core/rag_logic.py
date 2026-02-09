@@ -1,19 +1,22 @@
 import time
-from app.core.logger import logger
-import logging
 import os
-from docx import Document
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from pgvector.sqlalchemy import Vector
+import logging
+import numpy as np
+from typing import List, Dict, Any, Optional
+
 from sqlalchemy import Column, Integer, Text, String, select, text, func, Index
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.dialects.postgresql import TSVECTOR
-from sqlalchemy.orm import declarative_base
+from pgvector.sqlalchemy import Vector
+
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import Docx2txtLoader
 
 from app.core.hybrid_retriever import HybridRetriever
+from app.core.logger import logger
 
 Base = declarative_base()
 
@@ -80,7 +83,7 @@ class RAGEngine:
         )
         session.add(db_chunk)
       await session.commit()
-      
+
     db_duration = time.perf_counter() - start_time
     total_duration = time.perf_counter() - overall_start
     
@@ -143,7 +146,7 @@ class RAGEngine:
         
         return [row[0] for row in result.all()]
       except Exception as e:
-        logger.error(f"Error while doqnloading projects: {e}")
+        logger.error(f"Error while downloading projects: {e}")
         return []
 
 rag_engine = RAGEngine()
