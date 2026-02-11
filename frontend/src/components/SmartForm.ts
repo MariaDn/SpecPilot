@@ -137,6 +137,8 @@ export class SmartForm extends LitElement {
   @state() private selectedProjectId = '';
   @state() private navQuery = '';
   @state() private existingProjects: string[] = [];
+  @state() private progress = 0;
+  @state() private currentStatus = '';
 
   render() {
     return html`
@@ -359,15 +361,27 @@ export class SmartForm extends LitElement {
       </form>
 
       <div class="sticky-actions">
+        ${this.isGenerating 
+          ? html`
+              <div style="margin-bottom: 10px; color: var(--lumo-primary-text-color); font-size: 0.9rem;">
+                ${this.currentStatus} (${this.progress}%)
+              </div>
+              <div style="width: 100%; height: 4px; background: #333; margin-bottom: 15px; border-radius: 2px; overflow: hidden;">
+                <div style="width: ${this.progress}%; height: 100%; background: var(--lumo-primary-text-color); transition: width 0.3s;"></div>
+              </div>
+            ` 
+          : nothing}
+
         ${this.errorMessage 
           ? html`<div class="error-container"><span>⚠️</span><div>${this.errorMessage}</div></div>` 
           : nothing}
+
         <vaadin-button 
           theme="primary" 
-          @click="${this.generateSpec}" 
+          @click="${this.generateFullSpec}" 
           ?disabled="${this.isGenerating || this.isFormInvalid}" 
           style="width: 100%;">
-          ${this.isGenerating ? t.questionnaire.generating : t.questionnaire.generate_btn}
+          ${this.isGenerating ? 'Генерація триває...' : t.questionnaire.generate_btn}
         </vaadin-button>
       </div>
     `;
@@ -450,7 +464,7 @@ export class SmartForm extends LitElement {
     }
   }
 
-  async generateSpec() {
+  async generateFullSpec() {
     const form = (this as unknown as HTMLElement).shadowRoot?.querySelector('#main-form') as HTMLFormElement;
     this.wasValidated = true;
 
@@ -462,26 +476,56 @@ export class SmartForm extends LitElement {
 
     this.isGenerating = true;
     this.errorMessage = '';
+    this.geminiResponse = '';
+    this.progress = 0;
 
     const questionnaire = this._serializeForm(form);
+    
+    const sectionGroups = [
+      { ids: ["1", "2", "3"], label: "Загальні відомості та аналіз об'єкта" },
+      { ids: ["4", "5", "6"], label: "Функціональні вимоги та архітектура" },
+      { ids: ["7", "8", "9", "10"], label: "Документування та умови використання" }
+    ];
 
     try {
-      const response = await fetch('http://localhost:8000/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          mode: "generate_tz", 
-          messages: [{ role: "user", content: [{ type: "text", text: "Згенеруй ТЗ на основі опитувальника" }] }],
-          context: { questionnaire } 
-        }),
-      });
-      if (!response.ok) throw new Error(`Server error: ${response.status}`);
-      const data = await response.json();
-      this.geminiResponse = data.output.document.sections.map((s: any) => `## ${s.name}\n${s.content}`).join('\n\n');
+      let accumulatedSections: any[] = [];
+
+      for (let i = 0; i < sectionGroups.length; i++) {
+        const group = sectionGroups[i];
+        this.currentStatus = `Крок ${i + 1}/3: ${group.label}...`;
+        
+        const response = await fetch('http://localhost:8000/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            mode: "generate_tz", 
+            messages: [
+              { role: "user", content: "Продовжуй генерацію ТЗ для наступних розділів." }
+            ],
+            context: { 
+              questionnaire,
+              target_sections: group.ids
+            } 
+          }),
+        });
+
+        if (!response.ok) throw new Error(`Server error на кроці ${i + 1}`);
+        
+        const data = await response.json();
+        const newSections = data.output.document.sections;
+        accumulatedSections.push(...newSections);
+
+        this.geminiResponse = accumulatedSections
+          .map((s: any) => `## ${s.name}\n${s.content}`)
+          .join('\n\n');
+        
+        this.progress = Math.round(((i + 1) / sectionGroups.length) * 100);
+      }
     } catch (error: any) {
       this.errorMessage = error.message;
     } finally {
       this.isGenerating = false;
+      this.currentStatus = '';
     }
   }
 
@@ -495,10 +539,11 @@ export class SmartForm extends LitElement {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           mode: "qa_navigation", 
-          messages: [{ role: "user", content: [{ type: "text", text: this.navQuery }] }],
+          messages: [
+            { role: "user", content: this.navQuery }
+          ],
           context: { 
-            task_metadata: { project_id: this.selectedProjectId },
-            questionnaire: {} 
+            task_metadata: { project_id: this.selectedProjectId } 
           } 
         }),
       });

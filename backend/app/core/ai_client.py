@@ -41,8 +41,9 @@ class ExternalAIClient:
       "messages": [m.dict() for m in request_data.messages],
       "context": request_data.context.dict(),
       "generation_config": {
-        "temperature": 0.2,
-        "max_tokens": 2048
+        "temperature": 0.1 if request_data.mode == "generate_tz" else 0.3,
+        "max_tokens": 4096 if request_data.mode == "generate_tz" else 1024,
+        "top_p": 0.9
       }
     }
 
@@ -51,15 +52,12 @@ class ExternalAIClient:
       "Content-Type": "application/json"
     }
 
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=150.0) as client:
       try:
         response = await client.post(self.api_url, json=payload, headers=headers)
         response.raise_for_status()
         return response.json()
       except Exception as e:
-        return {
-          "status": "error",
-          "message": f"AI Client Error: {str(e)}"
-        }
+        return {"status": "error", "message": f"AI Client Error: {str(e)}"}
 
 ai_client = ExternalAIClient()
