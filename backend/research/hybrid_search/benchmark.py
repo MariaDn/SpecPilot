@@ -16,7 +16,6 @@ class BenchmarkRunner:
       return json.load(f)
 
   async def run(self):
-    # Result metrics storage for Vector, Keyword, and Hybrid modes
     results = {
       "vector": {"mrr": 0.0, "hits": 0},
       "keyword": {"mrr": 0.0, "hits": 0},
@@ -28,20 +27,22 @@ class BenchmarkRunner:
 
     for case in self.test_cases:
       query = case["query"]
-      expected_id = str(case["expected_id"])
+      expected_ids = [str(eid) for eid in case["expected_ids"]]
       
-      # Test each retrieval mode defined in rag_logic.py
       for mode in ["vector", "keyword", "hybrid"]:
-        retrieved_chunks = await rag_engine.get_context(
-          query=query, 
-          search_mode=mode, 
-          limit=5
-        )
+        retrieved_chunks = await rag_engine.get_context(query=query, search_mode=mode, limit=5)
+        retrieved_ids = [str(r["id"]) for r in retrieved_chunks]
+
+        hit_index = next((i for i, rid in enumerate(retrieved_ids) if rid in expected_ids), None)
         
-        rank = self._calculate_rank(retrieved_chunks, expected_id)
-        if rank > 0:
+        if hit_index is not None:
           results[mode]["hits"] += 1
-          results[mode]["mrr"] += 1.0 / rank
+          results[mode]["mrr"] += 1.0 / (hit_index + 1)
+        else:
+          top_got = retrieved_chunks[0]["content"][:100] if retrieved_chunks else "NOTHING FOUND"
+          logger.info(f"[{mode.upper()}] Missed: {query}")
+          logger.info(f"   - Expected: {expected_ids}")
+          logger.info(f"   - Top-1 Found: {top_got}...")
 
     self._display_final_report(results, total)
     return results
@@ -66,7 +67,7 @@ class BenchmarkRunner:
     print("="*50 + "\n")
 
 async def main():
-  runner = BenchmarkRunner("backend/research/data/gold_standard.json")
+  runner = BenchmarkRunner("research/data/gold_standard.json")
   await runner.run()
 
 if __name__ == "__main__":

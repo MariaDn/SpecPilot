@@ -3,6 +3,7 @@ import os
 import logging
 import numpy as np
 from typing import List, Dict, Any, Optional
+import re
 
 from sqlalchemy import Column, Integer, Text, String, select, text, func, Index
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -40,11 +41,17 @@ class RAGEngine:
     self.async_session = sessionmaker(self.engine, class_=AsyncSession)
     self.embeddings = HuggingFaceEmbeddings(model_name="all-mpnet-base-v2")
     self.retriever = HybridRetriever()
+    self.base_splitter = RecursiveCharacterTextSplitter(
+      chunk_size=1000,
+      chunk_overlap=200,
+      separators=["\n\n", "\n", "Таблиця", "FR-", ". "]
+    )
 
     self.text_splitter = SemanticChunker(
       self.embeddings,
-      breakpoint_threshold_type="percentile",
-      buffer_size=3
+      breakpoint_threshold_type="standard_deviation",
+      breakpoint_threshold_amount=0.8,
+      buffer_size=1
     )
 
   async def ingest_docx(self, project_id: str, file_path: str):
@@ -54,13 +61,17 @@ class RAGEngine:
     start_time = time.perf_counter()
     loader = Docx2txtLoader(file_path)
     documents = loader.load()
+    intermediate_docs = self.base_splitter.split_documents(documents)
     load_duration = time.perf_counter() - start_time
     logger.info(f"Step 1/3: Document loaded in {load_duration:.4f} seconds.")
     
     # 2. Semantic Chunking
     start_time = time.perf_counter()
     # Uses SemanticChunker with percentile threshold and buffer_size=3
-    chunks = self.text_splitter.split_documents(documents)
+    chunks = self.text_splitter.split_documents(intermediate_docs)
+    # chunks = self.text_splitter.split_documents(documents)
+    for i, chunk in enumerate(chunks[:3]):
+      logger.info(f"Chunk {i} length: {len(chunk.page_content)} chars. Preview: {chunk.page_content[:50]}...")
     chunk_duration = time.perf_counter() - start_time
     logger.info(f"Step 2/3: Semantic chunking completed in {chunk_duration:.4f} seconds. Created {len(chunks)} chunks.")
     
@@ -71,15 +82,14 @@ class RAGEngine:
         text_content = chunk_doc.page_content
 
         # Generate embedding using all-mpnet-base-v2 model (768 dimensions)
-        vector = self.embeddings.embed_query(text_content)
+        contextual_text = f"Проект: {project_id}. Зміст: {chunk_doc.page_content}"
+        vector = self.embeddings.embed_query(contextual_text)
 
         # Prepare data for Hybrid Search (Vector + TSVector)
         db_chunk = ProjectChunk(
           project_id=project_id,
           content=text_content,
-          embedding=vector,
-          # tsvector for Ukrainian language support
-          search_vector=func.to_tsvector('ukrainian', text_content)
+          embedding=vector
         )
         session.add(db_chunk)
       await session.commit()
@@ -107,21 +117,39 @@ class RAGEngine:
 
       # 1. Vector search (Cosine Distance)
       if search_mode in ["vector", "hybrid"]:
-        vec_stmt = select(ProjectChunk).order_by(
-          ProjectChunk.embedding.cosine_distance(query_vector)
-        ).limit(15)
+        vec_stmt = select(ProjectChunk)
         if project_id:
           vec_stmt = vec_stmt.where(ProjectChunk.project_id == project_id)
-        vec_res = (await session.execute(vec_stmt)).scalars().all()
+
+        vec_stmt = vec_stmt.order_by(
+          ProjectChunk.embedding.cosine_distance(query_vector)
+        ).limit(50)
+        result = await session.execute(vec_stmt)
+        vec_res = result.scalars().all()
       
       # 2. Full text search (BM25-like)
       if search_mode in ["keyword", "hybrid"]:
-        ts_query = func.websearch_to_tsquery('ukrainian', query)
+        clean_query = query.replace('?', '').replace('!', '').replace('(', '').replace(')', '')
+        words = [w for w in clean_query.split() if len(w) > 3]
+        ts_query_string = " | ".join(words) if words else ""
+
+        numbers = re.findall(r'\d+(?:\.\d+)?', clean_query)
+        if numbers:
+          num_query = " & ".join(numbers)
+          if ts_query_string:
+            ts_query_string = f"({num_query}) & ({ts_query_string})"
+          else:
+            ts_query_string = num_query
+
+        if ts_query_string:
+          ts_query = func.to_tsquery('ukrainian', ts_query_string)
+        else:
+          ts_query = func.websearch_to_tsquery('ukrainian', query)
         keyword_stmt = select(ProjectChunk).where(
           ProjectChunk.search_vector.op('@@')(ts_query)
         ).order_by(
           func.ts_rank_cd(ProjectChunk.search_vector, ts_query).desc()
-        ).limit(15)
+        ).limit(50)
         if project_id:
           keyword_stmt = keyword_stmt.where(ProjectChunk.project_id == project_id)
         key_res = (await session.execute(keyword_stmt)).scalars().all()
@@ -135,8 +163,7 @@ class RAGEngine:
         final_docs = await self.retriever.rrf_merge(vec_res, key_res)
         final_docs = final_docs[:limit]
 
-      # top-5 results
-      return [{"id": str(c.id), "content": c.content} for c in final_docs[:5]]
+      return [{"id": str(c.id), "content": c.content} for c in final_docs]
 
   async def get_all_projects(self):
     async with self.async_session() as session:

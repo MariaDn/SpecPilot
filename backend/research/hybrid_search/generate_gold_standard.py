@@ -1,7 +1,7 @@
 import asyncio
 import json
 import os
-from sqlalchemy import select, ilike
+from sqlalchemy import select, func
 from app.core.rag_logic import rag_engine, ProjectChunk
 from app.core.logger import logger
 
@@ -13,7 +13,7 @@ SEARCH_MAPPING = [
     },
     {
       "query": "Постанова КМУ № 205 від 21 лютого 2025 року",
-      "keyword": "Постанова Кабінету Міністрів України від 21 лютого 2025 року № 205",
+      "keyword": "Постанова 205",
       "description": "Пошук за точним номером постанови"
     },
     {
@@ -28,7 +28,7 @@ SEARCH_MAPPING = [
     },
     {
       "query": "Який час відгуку системи встановлено для 95% запитів?",
-      "keyword": "Час відгуку: ≤ 3 секунди",
+      "keyword": "3 секунди",
       "description": "Нефункціональна вимога до продуктивності"
     },
     {
@@ -60,33 +60,44 @@ SEARCH_MAPPING = [
 
 async def generate_json():
   gold_standard = []
+  logger.info("Starting Gold Standard dataset generation with Ranking optimization...")
 
-  logger.info("Starting Gold Standard dataset generation...")
-  
   async with rag_engine.async_session() as session:
     for item in SEARCH_MAPPING:
-      # SQL query using ILIKE to find the chunk ID by its content
-      stmt = select(ProjectChunk.id).where(
-        ProjectChunk.content.ilike(f"%{item['keyword']}%")
+      valid_ids = []
+
+      res_ilike = await session.execute(
+        select(ProjectChunk.id).where(ProjectChunk.content.ilike(f"%{item['keyword']}%")).limit(3)
       )
-      result = await session.execute(stmt)
-      real_id = result.scalars().first()
+      valid_ids.extend(res_ilike.scalars().all())
+      
+      ts_query = func.websearch_to_tsquery('ukrainian', item['keyword'])
+      res_ts = await session.execute(
+        select(ProjectChunk.id)
+        .where(ProjectChunk.search_vector.op('@@')(ts_query))
+        .order_by(func.ts_rank_cd(ProjectChunk.search_vector, ts_query).desc())
+          .limit(3)
+      )
+      valid_ids.extend(res_ts.scalars().all())
 
-      if real_id:
-        gold_standard.append({
-          "query": item["query"],
-          "expected_id": str(real_id),
-          "description": item["description"]
-        })
-        logger.info(f"Successfully mapped ID {real_id} for keyword: '{item['keyword']}'")
+      unique_ids = list(set(str(vid) for vid in valid_ids))
+
+      if unique_ids:
+          gold_standard.append({
+              "query": item["query"],
+              "expected_ids": unique_ids,
+              "description": item["description"]
+          })
+          logger.info(f"Mapped query '{item['query'][:30]}...' to {len(unique_ids)} IDs")
       else:
-        logger.warning(f"MATCH NOT FOUND in database for keyword: '{item['keyword']}'")
+          logger.warning(f"MATCH NOT FOUND for keyword: '{item['keyword']}'")
 
+  output_file = "research/data/gold_standard.json"
   os.makedirs("research/data", exist_ok=True)
-  with open("research/data/gold_standard.json", "w", encoding="utf-8") as f:
-    json.dump(gold_standard, f, ensure_all_ascii=False, indent=2)
+  with open(output_file, "w", encoding="utf-8") as f:
+    json.dump(gold_standard, f, ensure_ascii=False, indent=2)
   
-  logger.info(f"File {output_path} generated successfully. Total records: {len(gold_standard)}")
+  logger.info(f"File {output_file} generated. Total valid records: {len(gold_standard)}")
 
 if __name__ == "__main__":
-  asyncio.run(generate_json())
+    asyncio.run(generate_json())

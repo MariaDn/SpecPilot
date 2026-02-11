@@ -1,6 +1,6 @@
 services:
   db:
-    image: pgvector/pgvector:pg16
+    build: ./db
     container_name: enforence_db
     restart: always
     environment:
