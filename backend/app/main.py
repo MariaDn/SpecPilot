@@ -9,7 +9,7 @@ import shutil
 import os
 import logging
 from app.core.logger import logger
-from templates import TZ_STRUCTURE_TEMPLATE, SYSTEM_GENERATION_INSTRUCTION, SYSTEM_QA_INSTRUCTION, JSON_INSTRUCTIONS
+from app.core.templates import TZ_STRUCTURE_TEMPLATE, SYSTEM_GENERATION_INSTRUCTION, SYSTEM_QA_INSTRUCTION, JSON_INSTRUCTIONS
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
