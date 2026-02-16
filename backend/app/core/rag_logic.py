@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from pgvector.sqlalchemy import Vector
+from sqlalchemy import or_
 
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -108,7 +109,7 @@ class RAGEngine:
     logging.info("DB table is created")
 
 
-  async def get_context(self, query: str, project_id: str = None, search_mode: str = "hybrid", limit: int = 5):
+  async def get_context(self, query: str, project_id: str = None, search_mode: str = "hybrid", limit: int = 5, scope: str = "project"):
     query_vector = self.embeddings.embed_query(query)
 
     async with self.async_session() as session:
@@ -117,15 +118,23 @@ class RAGEngine:
 
       # 1. Vector search (Cosine Distance)
       if search_mode in ["vector", "hybrid"]:
-        vec_stmt = select(ProjectChunk)
-        if project_id:
-          vec_stmt = vec_stmt.where(ProjectChunk.project_id == project_id)
+        vec_stmt = select(ProjectChunk, ProjectChunk.embedding.cosine_distance(query_vector).label("distance"))
 
-        vec_stmt = vec_stmt.order_by(
-          ProjectChunk.embedding.cosine_distance(query_vector)
-        ).limit(50)
+        if scope == "project" and project_id:
+          vec_stmt = vec_stmt.where(ProjectChunk.project_id == project_id)
+        elif scope == "system":
+          vec_stmt = vec_stmt.where(ProjectChunk.project_id == "SYSTEM_REGULATIONS")
+        elif scope == "all" and project_id:
+          vec_stmt = vec_stmt.where(or_(
+            ProjectChunk.project_id == project_id,
+            ProjectChunk.project_id == "SYSTEM_REGULATIONS"
+          ))
+
+        vec_stmt = vec_stmt.order_by("distance").limit(50)
         result = await session.execute(vec_stmt)
-        vec_res = result.scalars().all()
+        for chunk, dist in result.all():
+          chunk.score = 1 - dist
+          vec_res.append(chunk)
       
       # 2. Full text search (BM25-like)
       if search_mode in ["keyword", "hybrid"]:
@@ -150,9 +159,20 @@ class RAGEngine:
         ).order_by(
           func.ts_rank_cd(ProjectChunk.search_vector, ts_query).desc()
         ).limit(50)
-        if project_id:
+
+        if scope == "project" and project_id:
           keyword_stmt = keyword_stmt.where(ProjectChunk.project_id == project_id)
+        elif scope == "system":
+          keyword_stmt = keyword_stmt.where(ProjectChunk.project_id == "SYSTEM_REGULATIONS")
+        elif scope == "all" and project_id:
+          keyword_stmt = keyword_stmt.where(or_(
+            ProjectChunk.project_id == project_id,
+            ProjectChunk.project_id == "SYSTEM_REGULATIONS"
+          ))
         key_res = (await session.execute(keyword_stmt)).scalars().all()
+
+        for chunk in key_res:
+          chunk.score = 0.7
 
       if search_mode == "vector":
         final_docs = vec_res[:limit]
@@ -163,7 +183,7 @@ class RAGEngine:
         final_docs = await self.retriever.rrf_merge(vec_res, key_res)
         final_docs = final_docs[:limit]
 
-      return [{"id": str(c.id), "content": c.content} for c in final_docs]
+      return [{"id": str(c.id), "content": c.content, "source": c.project_id, "score": getattr(c, "score", 0.0)} for c in final_docs]
 
   async def get_all_projects(self):
     async with self.async_session() as session:

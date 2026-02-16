@@ -13,9 +13,11 @@ class ExternalAIClient:
 
   async def check_connection(self):
     payload = {
-      "model": self.model,
-      "messages": [{"role": "user", "content": "ping"}],
-      "max_tokens": 1 
+      "inputs": {
+        "model": self.model,
+        "messages": [{"role": "user", "content": "ping"}],
+        "max_tokens": 1 
+      }
     }
     headers = {
       "Authorization": f"Bearer {self.api_key}",
@@ -35,15 +37,21 @@ class ExternalAIClient:
         return {"status": "error", "error": str(e)}
 
   async def generate_structured_response(self, request_data: Any):
+    messages_payload = [
+      m.dict() if hasattr(m, "dict") else m 
+      for m in request_data.messages
+    ]
     payload = {
-      "model": self.model,
-      "mode": request_data.mode,
-      "messages": [m.dict() for m in request_data.messages],
-      "context": request_data.context.dict(),
-      "generation_config": {
-        "temperature": 0.1 if request_data.mode == "generate_tz" else 0.3,
-        "max_tokens": 4096 if request_data.mode == "generate_tz" else 1024,
-        "top_p": 0.9
+      "inputs": {
+        "model": self.model,
+        "mode": request_data.mode,
+        "messages": messages_payload,
+        "context": request_data.context.dict(),
+        "generation_config": {
+          "temperature": 0.05 if request_data.mode == "generate_tz" else 0.3,
+          "max_tokens": 3072 if request_data.mode == "generate_tz" else 1024,
+          "top_p": 0.9
+        }
       }
     }
 
@@ -52,7 +60,7 @@ class ExternalAIClient:
       "Content-Type": "application/json"
     }
 
-    async with httpx.AsyncClient(timeout=150.0) as client:
+    async with httpx.AsyncClient(timeout=600.0) as client:
       try:
         response = await client.post(self.api_url, json=payload, headers=headers)
         response.raise_for_status()

@@ -165,6 +165,7 @@ export class SmartForm extends LitElement {
   renderGeneratorForm() {
     return html`
       <form id="main-form" class="${this.wasValidated ? 'validated' : ''}" @input="${this._handleInput}">
+        
         <collapsible-section title="${t.questionnaire.sections.s1}">
           <div class="input-group">
             <label>${t.questionnaire.fields.full_name}</label>
@@ -177,14 +178,25 @@ export class SmartForm extends LitElement {
           <div class="input-group">
             <label>${t.questionnaire.fields.category}</label>
             <select name="project_info.basic_data.category" required>
-              <option value="Державний">Державний</option>
-              <option value="Комерційний">Комерційний</option>
+              <option value="Державний">Державний / Public Sector</option>
+              <option value="Комерційний">Комерційний / Commercial</option>
             </select>
           </div>
           <div class="input-group">
             <label>${t.questionnaire.fields.customer}</label>
             <input type="text" name="project_info.basic_data.customer_org" required>
           </div>
+          
+          <div class="input-group">
+            <label>${t.questionnaire.fields.developer}</label>
+            <input type="text" name="project_info.basic_data.developer_org">
+          </div>
+
+          <div class="input-group">
+            <label>${t.questionnaire.fields.funding}</label>
+            <input type="text" name="project_info.basic_data.funding_source">
+          </div>
+
           <div class="input-group">
             <label>${t.questionnaire.fields.doc_type}</label>
             <input type="text" name="project_info.development_basis.document_type" required>
@@ -193,6 +205,17 @@ export class SmartForm extends LitElement {
             <label>${t.questionnaire.fields.doc_details}</label>
             <input type="text" name="project_info.development_basis.document_details" required>
           </div>
+
+          <div class="input-group">
+            <label>${t.questionnaire.fields.approver}</label>
+            <input type="text" name="project_info.development_basis.approver">
+          </div>
+
+          <div class="input-group">
+            <label>${t.questionnaire.fields.related_docs}</label>
+            <textarea name="project_info.development_basis.input_docs"></textarea>
+          </div>
+
           <div class="input-group">
             <label>${t.questionnaire.fields.start_date}</label>
             <input type="date" name="project_info.timeline.start_date" required>
@@ -201,10 +224,36 @@ export class SmartForm extends LitElement {
             <label>${t.questionnaire.fields.end_date}</label>
             <input type="date" name="project_info.timeline.end_date" required>
           </div>
+
+          <div class="input-group">
+            <label>${t.questionnaire.fields.milestones}</label>
+            <textarea name="project_info.timeline.milestones"></textarea>
+          </div>
+
           <div class="input-group">
             <label>${t.questionnaire.fields.lifecycle_type}</label>
-            <input type="text" name="project_info.lifecycle.type" required>
+            <select name="project_info.lifecycle.type" required>
+              <option value="Створення з нуля (Greenfield)">Greenfield</option>
+              <option value="Модернізація (Brownfield)">Brownfield</option>
+              <option value="Розвиток/Масштабування">Scale/Evolution</option>
+            </select>
           </div>
+
+          <div style="border-left: 3px solid #eee; padding-left: 10px; margin-top: 10px;">
+             <div class="input-group">
+               <label>${t.questionnaire.fields.legacy_name}</label>
+               <input type="text" name="project_info.legacy_system.name">
+             </div>
+             <div class="input-group">
+               <label>${t.questionnaire.fields.legacy_stack}</label>
+               <input type="text" name="project_info.legacy_system.stack">
+             </div>
+             <div class="input-group">
+               <label>${t.questionnaire.fields.legacy_problems}</label>
+               <textarea name="project_info.legacy_system.problems"></textarea>
+             </div>
+          </div>
+
           <div class="input-group">
             <label>${t.questionnaire.fields.audience}</label>
             <textarea name="project_info.goals.audience" required></textarea>
@@ -217,6 +266,11 @@ export class SmartForm extends LitElement {
             <label>${t.questionnaire.fields.outcome}</label>
             <textarea name="project_info.goals.outcome" required></textarea>
           </div>
+          
+          <div class="input-group">
+            <label>${t.form.budget}</label>
+            <input type="text" name="project_info.goals.budget">
+          </div>
         </collapsible-section>
 
         <collapsible-section title="${t.questionnaire.sections.s2}">
@@ -228,6 +282,12 @@ export class SmartForm extends LitElement {
             <label>${t.questionnaire.fields.tech_owner}</label>
             <input type="text" name="stakeholders.technical_owner" required>
           </div>
+          
+          <div class="input-group">
+            <label>${t.questionnaire.fields.domain_experts}</label>
+            <input type="text" name="stakeholders.domain_experts">
+          </div>
+
           <div class="input-group">
             <label>${t.questionnaire.fields.end_users}</label>
             <textarea name="stakeholders.end_users_description" required></textarea>
@@ -243,6 +303,12 @@ export class SmartForm extends LitElement {
             <label>${t.questionnaire.fields.current_state}</label>
             <textarea name="automation_object.current_state_description"></textarea>
           </div>
+          
+          <div class="input-group">
+            <label>${t.questionnaire.fields.org_structure}</label>
+            <textarea name="automation_object.org_structure"></textarea>
+          </div>
+
           <div class="input-group">
             <label>${t.questionnaire.fields.biz_processes}</label>
             <textarea name="automation_object.business_processes"></textarea>
@@ -251,32 +317,93 @@ export class SmartForm extends LitElement {
             <label>${t.questionnaire.fields.work_mode}</label>
             <input type="text" name="automation_object.operating_conditions.work_mode">
           </div>
+          
+          <div class="input-group">
+            <label>${t.questionnaire.fields.climate}</label>
+            <input type="text" name="automation_object.operating_conditions.climate">
+          </div>
+
+          <div class="input-group">
+            <label>${t.questionnaire.fields.locations}</label>
+            <input type="text" name="automation_object.operating_conditions.geo_location">
+          </div>
+          <div class="input-group">
+            <label>${t.questionnaire.fields.workstations}</label>
+            <input type="text" name="automation_object.operating_conditions.workplaces_count">
+          </div>
         </collapsible-section>
 
         <collapsible-section title="${t.questionnaire.sections.s4}">
           <div class="input-group">
             <label>${t.questionnaire.fields.use_cases}</label>
-            <textarea name="functional_requirements.use_cases_raw"></textarea>
+            <textarea name="functional_requirements.use_cases_raw" style="min-height: 150px;"></textarea>
           </div>
         </collapsible-section>
 
         <collapsible-section title="${t.questionnaire.sections.s5}">
           <div class="input-group">
             <label>${t.questionnaire.fields.arch_style}</label>
-            <input type="text" name="architecture_requirements.style">
+            <select name="architecture_requirements.style">
+               <option value="Microservices">Microservices</option>
+               <option value="Monolithic">Monolithic</option>
+               <option value="Service-Based">Service-Based</option>
+               <option value="TBD">TBD (AI Suggestion)</option>
+            </select>
           </div>
+          
+          <div class="input-group">
+            <label>${t.questionnaire.fields.arch_reason}</label>
+            <textarea name="architecture_requirements.justification"></textarea>
+          </div>
+
           <div class="input-group">
             <label>${t.questionnaire.fields.deployment}</label>
             <input type="text" name="architecture_requirements.infrastructure.deployment_model">
           </div>
+
+          <div class="input-group">
+            <label>${t.questionnaire.fields.cloud_provider}</label>
+            <input type="text" name="architecture_requirements.infrastructure.cloud_provider">
+          </div>
+          
+          <div class="input-group">
+             <label>${t.questionnaire.fields.containerization}</label>
+             <input type="text" name="architecture_requirements.infrastructure.containerization">
+          </div>
+
           <div class="input-group">
             <label>${t.questionnaire.fields.db_types}</label>
             <input type="text" name="architecture_requirements.data_architecture.db_types">
           </div>
+          
+          <div class="input-group">
+            <label>${t.questionnaire.fields.db_pattern}</label>
+            <input type="text" name="architecture_requirements.data_architecture.db_pattern">
+          </div>
+
+          <div class="input-group">
+             <label>${t.questionnaire.fields.backup} (Volume & Backup)</label>
+             <textarea name="architecture_requirements.data_architecture.volume_and_backup"></textarea>
+          </div>
+
           <div class="input-group">
             <label>${t.questionnaire.fields.integrations}</label>
             <textarea name="architecture_requirements.integrations.patterns"></textarea>
           </div>
+
+          <div class="input-group">
+            <label>${t.questionnaire.fields.integrations} (Details)</label>
+            <input type="text" name="architecture_requirements.integrations.details">
+          </div>
+
+          <div class="input-group" style="border-top: 1px dashed #ccc; padding-top: 10px;">
+            <label><strong>${t.questionnaire.fields.qa_priorities}</strong></label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <input type="text" name="architecture_requirements.qa_priorities.critical" placeholder="Priority 1 (Critical)">
+                <input type="text" name="architecture_requirements.qa_priorities.high" placeholder="Priority 2 (High)">
+            </div>
+          </div>
+
           <div class="input-group">
             <label>${t.questionnaire.fields.adr}</label>
             <textarea name="architecture_requirements.adr_raw"></textarea>
@@ -293,6 +420,10 @@ export class SmartForm extends LitElement {
             <input type="text" name="non_functional_requirements.scalability">
           </div>
           <div class="input-group">
+            <label>${t.questionnaire.fields.availability}</label>
+            <input type="text" name="non_functional_requirements.availability">
+          </div>
+          <div class="input-group">
             <label>${t.questionnaire.fields.security}</label>
             <textarea name="non_functional_requirements.security.raw_requirements"></textarea>
           </div>
@@ -300,7 +431,20 @@ export class SmartForm extends LitElement {
 
         <collapsible-section title="${t.questionnaire.sections.s7}">
           <div class="input-group">
-            <label>${t.questionnaire.fields.tech_stack}</label>
+            <label>Frontend Stack</label>
+            <input type="text" name="tech_stack.frontend" placeholder="React, Vue...">
+          </div>
+          <div class="input-group">
+            <label>Backend Stack</label>
+            <input type="text" name="tech_stack.backend" placeholder="Python, Java...">
+          </div>
+          <div class="input-group">
+            <label>Infrastructure Stack</label>
+            <input type="text" name="tech_stack.infrastructure" placeholder="K8s, Terraform...">
+          </div>
+
+          <div class="input-group">
+            <label>${t.questionnaire.fields.tech_stack} (General)</label>
             <textarea name="tech_stack.software_description"></textarea>
           </div>
           <div class="input-group">
@@ -314,6 +458,20 @@ export class SmartForm extends LitElement {
             <label>${t.questionnaire.fields.acceptance}</label>
             <textarea name="acceptance.procedure_and_criteria"></textarea>
           </div>
+          
+          <div class="input-group">
+            <label>${t.questionnaire.fields.trial_duration}</label>
+            <input type="text" name="acceptance.trial_duration">
+          </div>
+          <div class="input-group">
+            <label>${t.questionnaire.fields.responsible_person}</label>
+            <input type="text" name="acceptance.responsible_person">
+          </div>
+
+          <div class="input-group">
+             <label>${t.questionnaire.fields.warranty}</label>
+             <textarea name="acceptance.warranty_and_support"></textarea>
+          </div>
         </collapsible-section>
 
         <collapsible-section title="${t.questionnaire.sections.s9}">
@@ -321,20 +479,48 @@ export class SmartForm extends LitElement {
             <label>${t.questionnaire.fields.doc_list}</label>
             <textarea name="documentation.required_documents"></textarea>
           </div>
+          <div class="input-group">
+            <label>${t.questionnaire.fields.doc_lang}</label>
+            <select name="documentation.language">
+                <option value="UA">UA</option>
+                <option value="EN">EN</option>
+                <option value="UA+EN">UA+EN</option>
+            </select>
+          </div>
         </collapsible-section>
 
         <collapsible-section title="${t.questionnaire.sections.s10}">
           <div class="input-group">
             <label>${t.questionnaire.fields.kmu_criticality}</label>
             <select name="compliance.kmu_205_compliance.criticality">
-              <option value="КІІ">КІІ</option>
-              <option value="Звичайна">Звичайна</option>
+              <option value="КІІ">КІІ / CII</option>
+              <option value="Звичайна">Звичайна / Standard</option>
             </select>
           </div>
           <div class="input-group">
             <label>${t.questionnaire.fields.localization}</label>
             <input type="text" name="compliance.data_localization">
           </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="input-group">
+                <label>RPO</label>
+                <input type="text" name="compliance.rpo" placeholder="< 15 min">
+            </div>
+            <div class="input-group">
+                <label>RTO</label>
+                <input type="text" name="compliance.rto" placeholder="< 2 hours">
+            </div>
+          </div>
+          
+          <div class="input-group">
+            <label>${t.questionnaire.fields.geo_replication}</label>
+            <select name="compliance.geo_replication">
+                <option value="Ні">Ні / No</option>
+                <option value="Так">Так / Yes</option>
+            </select>
+          </div>
+
           <div class="input-group">
             <label>${t.questionnaire.fields.iso_standards}</label>
             <textarea name="compliance.international_standards"></textarea>
@@ -356,6 +542,11 @@ export class SmartForm extends LitElement {
           <div class="input-group">
             <label>${t.questionnaire.fields.pm_contacts}</label>
             <input type="text" name="additional_info.pm_contacts">
+          </div>
+          
+          <div class="input-group">
+            <label>${t.questionnaire.fields.special_requirements}</label>
+            <input type="text" name="additional_info.special_requirements">
           </div>
         </collapsible-section>
       </form>
@@ -381,7 +572,7 @@ export class SmartForm extends LitElement {
           @click="${this.generateFullSpec}" 
           ?disabled="${this.isGenerating || this.isFormInvalid}" 
           style="width: 100%;">
-          ${this.isGenerating ? 'Генерація триває...' : t.questionnaire.generate_btn}
+          ${this.isGenerating ? t.questionnaire.generating : t.questionnaire.generate_btn}
         </vaadin-button>
       </div>
     `;
@@ -465,7 +656,12 @@ export class SmartForm extends LitElement {
   }
 
   async generateFullSpec() {
-    const form = (this as unknown as HTMLElement).shadowRoot?.querySelector('#main-form') as HTMLFormElement;
+    const form = this.shadowRoot?.querySelector('#main-form') as HTMLFormElement;
+    if (!form) {
+        console.error("Form not found");
+        return;
+    }
+
     this.wasValidated = true;
 
     if (!form.checkValidity()) {
@@ -482,9 +678,16 @@ export class SmartForm extends LitElement {
     const questionnaire = this._serializeForm(form);
     
     const sectionGroups = [
-      { ids: ["1", "2", "3"], label: "Загальні відомості та аналіз об'єкта" },
-      { ids: ["4", "5", "6"], label: "Функціональні вимоги та архітектура" },
-      { ids: ["7", "8", "9", "10"], label: "Документування та умови використання" }
+      { ids: ["1"], label: "1. Загальні відомості" },
+      { ids: ["2"], label: "2. Робочий процес та стек" },
+      { ids: ["3"], label: "3. Вимоги до системи (FR/NFR)" },
+      { ids: ["4"], label: "4. Склад та зміст робіт" },
+      { ids: ["5"], label: "5. Контроль та приймання" },
+      { ids: ["6"], label: "6. Введення в експлуатацію" },
+      { ids: ["7"], label: "7. Документування" },
+      { ids: ["8"], label: "8. Джерела розробки" },
+      { ids: ["9"], label: "9. Порядок змін" },
+      { ids: ["10"], label: "10. Додатки" }
     ];
 
     try {
@@ -492,16 +695,15 @@ export class SmartForm extends LitElement {
 
       for (let i = 0; i < sectionGroups.length; i++) {
         const group = sectionGroups[i];
-        this.currentStatus = `Крок ${i + 1}/3: ${group.label}...`;
+        this.currentStatus = `Генерація: ${group.label} (${i + 1}/${sectionGroups.length})`;
+        this.requestUpdate();
         
         const response = await fetch('http://localhost:8000/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             mode: "generate_tz", 
-            messages: [
-              { role: "user", content: "Продовжуй генерацію ТЗ для наступних розділів." }
-            ],
+            messages: [],
             context: { 
               questionnaire,
               target_sections: group.ids
@@ -512,8 +714,28 @@ export class SmartForm extends LitElement {
         if (!response.ok) throw new Error(`Server error на кроці ${i + 1}`);
         
         const data = await response.json();
+
+        if (data.status === 'error') {
+          throw new Error(`AI Error: ${data.message}`);
+        }
+        if (!data.output || !data.output.document) {
+          if (data.status === 'partial_error' && data.raw_output) {
+             console.warn("Parsing failed, showing raw output");
+             this.geminiResponse += `\nПомилка форматування. Сирий текст:\n${data.raw_output}`;
+             return; 
+          }
+          throw new Error("Некоректна відповідь від AI (відсутнє поле document)");
+        }
+
         const newSections = data.output.document.sections;
-        accumulatedSections.push(...newSections);
+        const validSections = newSections.filter((s: any) => 
+          !s.content.includes("Розділ не був згенерований моделлю")
+        );
+        if (validSections.length > 0) {
+          accumulatedSections.push(...validSections);
+        } else {
+          accumulatedSections.push(...newSections);
+        }
 
         this.geminiResponse = accumulatedSections
           .map((s: any) => `## ${s.name}\n${s.content}`)
@@ -540,15 +762,23 @@ export class SmartForm extends LitElement {
         body: JSON.stringify({ 
           mode: "qa_navigation", 
           messages: [
-            { role: "user", content: this.navQuery }
+            { role: "user", content: [{ type: "text", text: this.navQuery }] }
           ],
           context: { 
-            task_metadata: { project_id: this.selectedProjectId } 
+            task_metadata: { project_id: this.selectedProjectId },
+            questionnaire: {}
           } 
         }),
       });
       const data = await response.json();
-      this.geminiResponse = data.output.answer.text;
+      if (data.output && data.output.answer) {
+          this.geminiResponse = data.output.answer.text;
+      } else if (data.output && data.output.document) {
+          this.geminiResponse = JSON.stringify(data.output.document);
+      } else {
+          this.geminiResponse = "Отримано некоректну відповідь від сервера.";
+      }
+
     } catch (e) {
       this.errorMessage = "Помилка пошуку в pgvector";
     } finally {

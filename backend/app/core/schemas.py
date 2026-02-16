@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, validator
-from typing import List, Dict
+from typing import List, Dict, Optional
+from app.core.logger import logger
 
 class TZSection(BaseModel):
   code: str
@@ -9,6 +10,7 @@ class TZSection(BaseModel):
 
 class TZDocument(BaseModel):
   sections: List[TZSection]
+  thought_process: Optional[str] = None
 
   @validator('sections')
   def validate_all_sections_present(cls, v):
@@ -17,5 +19,5 @@ class TZDocument(BaseModel):
     
     missing = set(expected_codes) - set(received_codes)
     if missing:
-      print(f"Warning: Missing sections: {missing}")
+      logger.info(f"Warning: Missing sections: {missing}")
     return v

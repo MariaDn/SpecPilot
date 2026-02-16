@@ -7,9 +7,20 @@ from typing import Dict, Any, Optional, List
 from contextlib import asynccontextmanager
 import shutil
 import os
+import json
 import logging
 from app.core.logger import logger
-from app.core.templates import TZ_STRUCTURE_TEMPLATE, SYSTEM_GENERATION_INSTRUCTION, SYSTEM_QA_INSTRUCTION, JSON_INSTRUCTIONS
+from app.core.templates import (
+  TZ_STRUCTURE_TEMPLATE, 
+  SYSTEM_GENERATION_INSTRUCTION, 
+  SYSTEM_QA_INSTRUCTION, 
+  FEW_SHOT_EXAMPLES,
+  SECTION_SPECIFIC_INSTRUCTIONS,
+  JSON_INSTRUCTIONS,
+  FORMATING_STYLE
+)
+from app.core.schemas import TZSection, TZDocument
+from app.core.utils import SECTION_CONTEXT_MAPPING
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -45,6 +56,7 @@ class Message(BaseModel):
   content: List[MessageContent]
 
 class TaskMetadata(BaseModel):
+  project_id: Optional[str] = None
   tz_structure_version: str = "UA-205-v1"
   language: str = "uk"
   project_domain: Optional[str] = None
@@ -75,46 +87,127 @@ async def upload_project_doc(project_id: str, file: UploadFile = File(...)):
 async def generate_spec(data: GenerateSpecRequest):
   target_ids = data.context.target_sections or [str(i) for i in range(1, 11)]
 
+  rag_context = ""
+  questionnaire_text = json.dumps(data.context.questionnaire, ensure_ascii=False, indent=2)
+
   if data.mode == "qa_navigation":
     user_query = data.messages[-1].content[0].text if isinstance(data.messages[-1].content, list) else data.messages[-1].content
-  else:
-    problem = data.context.questionnaire.get("project_info", {}).get("goals", {}).get("problem_statement", "")
-    user_query = f"{problem} розділи ТЗ: {', '.join(target_ids)}"
-
-  project_id = data.context.task_metadata.project_id if data.context.task_metadata else None
-  retrieved_chunks = await rag_engine.get_context(user_query, project_id=project_id)  
-  filtered_chunks = [c for c in retrieved_chunks if c.score > 0.6][:5]
-  data.context.retrieved_chunks = filtered_chunks
-
-  if data.mode == "generate_tz":
-    target_structure = {k: v for k, v in TZ_STRUCTURE_TEMPLATE.items() if k in target_ids}
-    sections_info = "\n".join([
-      f"{k}. {v if isinstance(v, str) else v['title']}" 
-      for k, v in target_structure.items()
-    ])
-
-
-    focus_instruction = (
-      f"{SYSTEM_GENERATION_INSTRUCTION}\n\n"
-      f"{JSON_INSTRUCTIONS}\n\n"
-      f"ЗАРАЗ ГЕНЕРУЙ ТІЛЬКИ РОЗДІЛИ: {', '.join(target_ids)}.\n"
-      f"СТРУКТУРА ЦИХ РОЗДІЛІВ:\n{sections_info}"
-    )
-
-    new_messages = [{"role": "system", "content": [{"type": "text", "text": focus_instruction}]}]
-        
-    history = [m.dict() if hasattr(m, 'dict') else m for m in data.messages if (m.role if hasattr(m, 'role') else m.get('role')) != "system"]
-    new_messages.extend(history[-2:])
-    
-    new_messages.append({"role": "user", "content": [{"type": "text", "text": f"Дані опитувальника: {data.context.questionnaire}\n\nЗгенеруй розділи у JSON."}]})
-    data.messages = new_messages
+    logger.info(f"[RAG START] User query: '{user_query}'")
+    project_id = data.context.task_metadata.project_id if data.context.task_metadata else None
+    if project_id:
+      raw_chunks = await rag_engine.get_context(user_query, project_id=project_id, scope="project", limit=15)
+      logger.info(f"[RAG RAW] Знайдено кандидатів: {len(raw_chunks)}")
       
-  elif data.mode == "qa_navigation":
+      for i, c in enumerate(raw_chunks[:3]):
+        logger.info(f"   👉 Candidate #{i+1}: Score={c.get('score'):.4f} | Text='{c['content'][:40]}...'")
+
+      THRESHOLD = 0.6
+      filtered_chunks = [c for c in raw_chunks if c.get('score', 0) > THRESHOLD][:5]
+
+      logger.info(f"[RAG FILTER] Після порогу {THRESHOLD}: залишилось {len(filtered_chunks)}")
+
+      if filtered_chunks:
+        rag_context = "\n\n".join([f"Фрагмент документу: {c['content']}" for c in filtered_chunks])
+      else:
+        rag_context = "Інформація в документах проекту відсутня."
+        logger.warning("WARNING: All documents above THRESHOLD!")
+    
     if not any(m.role == "system" for m in data.messages):
       data.messages.insert(0, {
         "role": "system", 
-        "content": [{"type": "text", "text": f"{SYSTEM_QA_INSTRUCTION}"}]
+        "content": [{"type": "text", "text": f"{SYSTEM_QA_INSTRUCTION}\n\nКОНТЕКСТ:\n{rag_context}"}]
       })
+
+  elif data.mode == "generate_tz":
+    first_target = target_ids[0] if target_ids else "1"
+    section_title = TZ_STRUCTURE_TEMPLATE.get(first_target, {}).get("title", "") if isinstance(TZ_STRUCTURE_TEMPLATE.get(first_target), dict) else ""
+
+    reg_query = f"Вимоги до змісту розділу '{first_target} {section_title}' згідно Постанови 205 Додаток 3"
+    reg_chunks = await rag_engine.get_context(reg_query, project_id="SYSTEM_REGULATIONS", scope="system", limit=3)
+
+    ref_query = f"Приклад змісту розділу '{first_target} {section_title}' з технічними деталями та таблицями"
+    ref_chunks = await rag_engine.get_context(ref_query, project_id="TEMPLATE_TZ", scope="project", limit=2)
+
+    if reg_chunks:
+      reg_text = "\n".join([f"--- Нормативна вимога ---\n{c['content']}" for c in reg_chunks])
+    else:
+      reg_text = "Специфічні вимоги не знайдені. Використовуй загальні стандарти ДСТУ 3008:2015."
+
+    if ref_chunks:
+      ref_text = "\n".join([f"--- ЗРАЗОК З РЕФЕРЕНСНОГО ТЗ ---\n{c['content']}" for c in ref_chunks])
+    else:
+      ref_text = "Приклади відсутні. Використовуй стандартний офіційний стиль."
+    
+    if first_target.startswith("3") or first_target == "3":
+      chosen_example = FEW_SHOT_EXAMPLES["requirements"]
+    elif first_target in ["7", "8", "9"]:
+      chosen_example = FEW_SHOT_EXAMPLES["docs"]
+    else:
+      chosen_example = FEW_SHOT_EXAMPLES["default"]
+
+    try:
+      full_q_data = json.loads(json.dumps(data.context.questionnaire, ensure_ascii=False))
+      clean_full_data = clean_empty_fields(full_q_data)
+      final_context_data = {}
+        
+      needed_keys = set()
+      for tid in target_ids:
+        base_id = tid.split('.')[0]
+        needed_keys.update(SECTION_CONTEXT_MAPPING.get(base_id, []))
+
+      if not needed_keys:
+        final_context_data = clean_full_data
+      else:
+        for key in needed_keys:
+          if key in clean_full_data:
+            final_context_data[key] = clean_full_data[key]
+        if "project_info" in clean_full_data:
+          if "project_info" not in final_context_data:
+            final_context_data["project_info"] = {}
+          final_context_data["project_info"]["basic_data"] = clean_full_data["project_info"].get("basic_data", {})
+
+      optimized_questionnaire_text = json.dumps(final_context_data, ensure_ascii=False, indent=2)
+    except Exception as e:
+      logger.warning(f"Optimization failed: {e}")
+      optimized_questionnaire_text = questionnaire_text
+
+    base_section_id = first_target.split('.')[0]
+    specific_instruction = SECTION_SPECIFIC_INSTRUCTIONS.get(
+      base_section_id, 
+      "ФОКУС: Дотримуйся структури розділу та вимог ДСТУ 3008."
+    )
+
+    formatted_system_prompt = SYSTEM_GENERATION_INSTRUCTION.format(
+      section_instruction=specific_instruction,
+      selected_example=chosen_example,
+      JSON_INSTRUCTIONS=JSON_INSTRUCTIONS,
+      FORMATING_STYLE=FORMATING_STYLE
+    )
+
+    final_system_prompt = (
+      f"{formatted_system_prompt}\n\n"
+      
+      f"### ЗАКОНОДАВСТВО (ОБОВ'ЯЗКОВО):\n"
+      f"{reg_text}\n\n"
+
+      f"### ПРИКЛАД ОФОРМЛЕННЯ (СТИЛЬ):\n"
+      f"УВАГА: Використовуй цей стиль і таблиці, АЛЕ НЕ ДАНІ.\n"
+      f"{ref_text}\n\n"
+
+      f"### ДАНІ ПРОЄКТУ (ДЖЕРЕЛО ФАКТІВ):\n"
+      f"{optimized_questionnaire_text}\n"
+    )
+
+    logger.info(f"[RAG GENERATION] {final_system_prompt}")
+
+    new_messages = [{"role": "system", "content": [{"type": "text", "text": final_system_prompt}]}]
+    
+    new_messages.append({
+      "role": "user", 
+      "content": [{"type": "text", "text": f"Згенеруй розділи {', '.join(target_ids)} у JSON."}]
+    })
+    
+    data.messages = new_messages
   
   raw_response = await ai_client.generate_structured_response(data)
 
@@ -127,7 +220,10 @@ async def generate_spec(data: GenerateSpecRequest):
       document_data = output_data.get("document") if isinstance(output_data, dict) else {}
       
       if not document_data:
-        raise ValueError("Модель не повернула структуру 'document'")
+        if "raw_output" in raw_response:
+          document_data = {"sections": [], "content": raw_response["raw_output"]}
+        else:
+          raise ValueError("Модель не повернула структуру 'document'")
 
       validated_doc = TZDocument(**document_data)
       
@@ -135,24 +231,32 @@ async def generate_spec(data: GenerateSpecRequest):
       
       for code in target_ids:
         if code not in existing_codes:
+          sec_def = TZ_STRUCTURE_TEMPLATE.get(code, "Розділ")
+          sec_name = sec_def["title"] if isinstance(sec_def, dict) else sec_def
+
           validated_doc.sections.append(TZSection(
             code=code,
-            name=TZ_STRUCTURE_TEMPLATE[code] if isinstance(TZ_STRUCTURE_TEMPLATE[code], str) else TZ_STRUCTURE_TEMPLATE[code]["title"],
+            name=sec_name,
             content="Розділ не був згенерований моделлю. Спробуйте повторити запит.",
             status="incomplete"
           ))
       
-      validated_doc.sections.sort(key=lambda x: float(x.code.split('.')[0]) if '.' in x.code else float(x.code))
+      def sort_key(x):
+        try:
+          return [int(part) for part in x.code.split('.')]
+        except:
+          return 999
+      validated_doc.sections.sort(key=sort_key)
       
       raw_response["output"]["document"]["sections"] = [s.dict() for s in validated_doc.sections]
       raw_response["output"]["diagnostics"] = {
-          "confidence_overall": 0.85,
-          "target_sections": target_ids,
-          "missing_in_step": list(set(target_ids) - existing_codes)
+        "rag_source": "SYSTEM_REGULATIONS" if rag_context else "None",
+        "thought_process": output_data.get("thought_process", "N/A")
       }
 
     except Exception as e:
       logger.error(f"Validation error: {e}")
+      raw_response["output"] = {"error": str(e), "document": {"sections": []}}
   
   return raw_response
 
@@ -168,3 +272,14 @@ async def list_projects():
   except Exception as e:
     logger.error(f"Error loading list of projects: {e}")
     return {"projects": []}
+
+def clean_empty_fields(data):
+  if isinstance(data, dict):
+    return {
+      k: v 
+      for k, v in ((k, clean_empty_fields(v)) for k, v in data.items()) 
+      if v not in (None, "", {}, [])
+    }
+  if isinstance(data, list):
+    return [v for v in map(clean_empty_fields, data) if v not in (None, "", {}, [])]
+  return data
