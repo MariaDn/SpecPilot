@@ -50,6 +50,7 @@ class ExternalAIClient:
         "generation_config": {
           "temperature": 0.05 if request_data.mode == "generate_tz" else 0.3,
           "max_tokens": 3072 if request_data.mode == "generate_tz" else 1024,
+          "repetition_penalty": 1.07 if request_data.mode == "generate_tz" else 1.03,
           "top_p": 0.9
         }
       }

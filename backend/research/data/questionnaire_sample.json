@@ -1,0 +1,124 @@
+{
+  "project_info": {
+    "basic_data": {
+      "full_name": "Єдина інформаційна система соціальної підтримки громадян",
+      "short_code": "ЄІСС-2025",
+      "category": "Державний",
+      "customer_org": "Міністерство соціальної політики України",
+      "developer_org": "ДП 'Інфотех'",
+      "funding_source": "Державний бюджет України, грант ЄС"
+    },
+    "development_basis": {
+      "document_type": "Наказ",
+      "document_details": "№55/2025 від 10.02.2025",
+      "approver": "Міністр соціальної політики",
+      "input_docs": "1. Стратегія цифрової трансформації соціальної сфери.\n2. Концепція створення ЄІСС."
+    },
+    "timeline": {
+      "start_date": "2025-03-01",
+      "end_date": "2025-12-31",
+      "milestones": "Етап 1: ТЗ та Проєктування (Березень 2025)\nЕтап 2: MVP (Липень 2025)\nЕтап 3: КСЗІ та Впровадження (Грудень 2025)"
+    },
+    "lifecycle": {
+      "type": "Створення з нуля (Greenfield)"
+    },
+    "legacy_system": {
+      "name": "",
+      "stack": "",
+      "problems": ""
+    },
+    "goals": {
+      "audience": "Громадяни України, що потребують соціальної допомоги (10 млн+), працівники соцзахисту.",
+      "problem_statement": "Розрізненість реєстрів, паперовий документообіг, необхідність фізичної присутності для оформлення виплат.",
+      "outcome": "Автоматизація 90% виплат, скорочення часу обробки заяви до 15 хвилин.",
+      "budget": "50 000 000 грн"
+    }
+  },
+  "stakeholders": {
+    "business_owner": "Заступник Міністра з питань CDTO",
+    "technical_owner": "Технічний директор ДП 'Інфотех'",
+    "domain_experts": "Юридичний департамент Мінсоцполітики, Представники Пенсійного фонду",
+    "end_users_description": "Громадяни (ВПО, пенсіонери), соціальні інспектори.",
+    "user_roles_description": "1. Заявник (громадянин)\n2. Оператор ЦНАП\n3. Соціальний інспектор\n4. Адміністратор системи\n5. Аудитор"
+  },
+  "automation_object": {
+    "current_state_description": "Часткова автоматизація через локальні бази даних, обмін файлами через пошту.",
+    "org_structure": "Центральний апарат -> 24 Обласні департаменти -> 1400 територіальних громад",
+    "business_processes": "1. Реєстрація заяви на допомогу.\n2. Верифікація даних у реєстрах.\n3. Нарахування виплат.\n4. Моніторинг використання коштів.",
+    "operating_conditions": {
+      "work_mode": "24/7 для порталу, 9:00-18:00 для бек-офісу",
+      "climate": "Стандартні умови серверних приміщень (t=18-22°C, вологість 45%)",
+      "geo_location": "Дата-центри в Києві та Львові (резервний)",
+      "workplaces_count": "5000+ робочих місць операторів"
+    }
+  },
+  "functional_requirements": {
+    "use_cases_raw": "UC-1: Подання заяви через Дію.\nUC-2: Автоматична перевірка доходів через ДПС.\nUC-3: Формування платіжної відомості.\nUC-4: Генерація звітності для Мінфіну."
+  },
+  "architecture_requirements": {
+    "style": "Microservices",
+    "justification": "Необхідність незалежного масштабування модулів виплат та високе навантаження в пікові періоди.",
+    "infrastructure": {
+      "deployment_model": "Private Cloud (G-Cloud)",
+      "cloud_provider": "De Novo / GigaCloud",
+      "containerization": "Kubernetes (K8s)"
+    },
+    "data_architecture": {
+      "db_types": "PostgreSQL, MongoDB (для логів), Redis",
+      "db_pattern": "Database per Service",
+      "volume_and_backup": "Прогноз: 50 ТБ даних/рік. Повний бекап щодня, інкрементальний кожні 4 години."
+    },
+    "integrations": {
+      "patterns": "REST API (зовнішні), gRPC (внутрішні), Kafka (асинхронні події)",
+      "details": "API Gateway: Kong. Синхронна обробка для UI, Асинхронна для звітів."
+    },
+    "qa_priorities": {
+      "critical": "Security, Availability, Data Integrity",
+      "high": "Scalability, Performance"
+    },
+    "adr_raw": "ADR-1: Використання Event Sourcing для історії нарахувань.\nADR-2: Зберігання файлів у S3-сумісному сховищі."
+  },
+  "non_functional_requirements": {
+    "performance": "API response < 200ms, генерація звіту < 5 хв",
+    "scalability": "Підтримка до 100 000 одночасних користувачів",
+    "availability": "99.9% (SLA), downtime не більше 45 хв/міс",
+    "security": {
+      "raw_requirements": "КСЗІ Г2, шифрування GOST/AES, MFA для адміністраторів, SIEM-моніторинг."
+    }
+  },
+  "tech_stack": {
+    "frontend": "React, TypeScript, Next.js",
+    "backend": "Java (Spring Boot) / Python (FastAPI)",
+    "infrastructure": "Terraform, Ansible, ArgoCD, Prometheus/Grafana",
+    "software_description": "Сучасний стек на базі Open Source рішень.",
+    "integrations_list": "Дія, ЄДР, ДРАЦС, Реєстр територіальної громади, Трембіта."
+  },
+  "acceptance": {
+    "procedure_and_criteria": "1. Проведення попередніх випробувань.\n2. Отримання атестату КСЗІ.\n3. Дослідна експлуатація.\n4. Приймальні випробування.",
+    "trial_duration": "3 місяці",
+    "responsible_person": "Голова приймальної комісії (Заст. Міністра)",
+    "warranty_and_support": "12 місяців гарантії. Техпідтримка L2/L3 - 24/7."
+  },
+  "documentation": {
+    "required_documents": "ТЗ, Технічний проєкт, Інструкції користувача/адміністратора, Регламент резервного копіювання, Програма випробувань.",
+    "language": "UA"
+  },
+  "compliance": {
+    "kmu_205_compliance": {
+      "criticality": "КІІ"
+    },
+    "data_localization": "Виключно на території України",
+    "rpo": "< 15 хвилин",
+    "rto": "< 2 годин",
+    "geo_replication": "Так",
+    "international_standards": "ISO 27001, GDPR (частково), WCAG 2.1 (доступність)"
+  },
+  "constraints": {
+    "technical_and_budgetary": "Заборона використання ПЗ походженням з країни-агресора. Лімітований бюджет на ліцензії.",
+    "project_assumptions": "Наявність стабільного каналу зв'язку Трембіти. Доступність реєстрів-донорів."
+  },
+  "additional_info": {
+    "pm_contacts": "pm@infotech.gov.ua, +380501112233",
+    "special_requirements": "Повна відповідність стандартам веб-доступності (для осіб з вадами зору)."
+  }
+}
