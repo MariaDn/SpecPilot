@@ -139,7 +139,7 @@ class RAGEngine:
       # 2. Full text search (BM25-like)
       if search_mode in ["keyword", "hybrid"]:
         clean_query = query.replace('?', '').replace('!', '').replace('(', '').replace(')', '')
-        words = [w for w in clean_query.split() if len(w) > 3]
+        words = [w for w in clean_query.split() if len(w) > 2]
         ts_query_string = " | ".join(words) if words else ""
 
         numbers = re.findall(r'\d+(?:\.\d+)?', clean_query)

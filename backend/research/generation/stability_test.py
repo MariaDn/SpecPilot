@@ -43,7 +43,6 @@ STRICT_JUDGE_PROMPT = """
 """
 
 async def generate_baseline(q_json: dict) -> str:
-  """Baseline з високою температурою для симуляції реальної поведінки LLM без контролю"""
   
   prompt = f"""
   Напиши розділ "Функціональні вимоги" для IT-системи.
@@ -67,7 +66,6 @@ async def generate_baseline(q_json: dict) -> str:
     return ""
 
 async def generate_enhanced(q_json: dict) -> str:
-  """Робить запит до вашого API з детальним логуванням помилок"""
 
   payload = {
     "mode": "generate_tz",

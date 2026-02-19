@@ -95,14 +95,14 @@ async def generate_spec(data: GenerateSpecRequest):
     logger.info(f"[RAG START] User query: '{user_query}'")
     project_id = data.context.task_metadata.project_id if data.context.task_metadata else None
     if project_id:
-      raw_chunks = await rag_engine.get_context(user_query, project_id=project_id, scope="project", limit=15)
+      raw_chunks = await rag_engine.get_context(user_query, project_id=project_id, scope="project", limit=30)
       logger.info(f"[RAG RAW] Знайдено кандидатів: {len(raw_chunks)}")
       
       for i, c in enumerate(raw_chunks[:3]):
         logger.info(f"   👉 Candidate #{i+1}: Score={c.get('score'):.4f} | Text='{c['content'][:40]}...'")
 
-      THRESHOLD = 0.6
-      filtered_chunks = [c for c in raw_chunks if c.get('score', 0) > THRESHOLD][:5]
+      THRESHOLD = 0.4
+      filtered_chunks = [c for c in raw_chunks if c.get('score', 0) > THRESHOLD][:10]
 
       logger.info(f"[RAG FILTER] Після порогу {THRESHOLD}: залишилось {len(filtered_chunks)}")
 
@@ -209,7 +209,7 @@ async def generate_spec(data: GenerateSpecRequest):
     
     data.messages = new_messages
   
-  raw_response = await ai_client.generate_structured_response(data)
+  raw_response = await ai_client.generate_structured_response(data, rag_context_str=rag_context)
 
   if raw_response.get("status") == "error":
     return raw_response

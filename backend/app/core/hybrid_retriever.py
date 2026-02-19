@@ -1,7 +1,7 @@
 import numpy as np
 
 class HybridRetriever:
-  def __init__(self, k_constant=10, vector_weight=0.2):
+  def __init__(self, k_constant=10, vector_weight=0.8):
     self.k = k_constant
     self.vector_weight = vector_weight
 

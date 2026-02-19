@@ -36,7 +36,7 @@ class ExternalAIClient:
       except Exception as e:
         return {"status": "error", "error": str(e)}
 
-  async def generate_structured_response(self, request_data: Any):
+  async def generate_structured_response(self, request_data: Any, rag_context_str: str = None):
     messages_payload = [
       m.dict() if hasattr(m, "dict") else m 
       for m in request_data.messages
@@ -47,8 +47,9 @@ class ExternalAIClient:
         "mode": request_data.mode,
         "messages": messages_payload,
         "context": request_data.context.dict(),
+        "rag_sources": rag_context_str,
         "generation_config": {
-          "temperature": 0.05 if request_data.mode == "generate_tz" else 0.3,
+          "temperature": 0.05 if request_data.mode == "generate_tz" else 0.1,
           "max_tokens": 3072 if request_data.mode == "generate_tz" else 1024,
           "repetition_penalty": 1.07 if request_data.mode == "generate_tz" else 1.03,
           "top_p": 0.9
